@@ -72,21 +72,17 @@ func TestParseDid(t *testing.T) {
 		}
 	})
 	for _, did := range invalidDids {
-		t.Log(did)
 		_, err := ParseDID(did)
 		if err == nil {
-			t.Fatalf("expected error for %s", did)
+			t.Errorf("expected error for %s", did)
 		}
-		//t.Log(err)
 	}
 	for _, did := range invalidDidMethods {
-		t.Log(did)
 		_, err := ParseDID(did)
 		if err == nil {
-			t.Fatalf("expected error for %s", did)
-		}
-		if ok := errors.Is(err, ErrUnsupportedDIDMethod); !ok {
-			t.Errorf("invalid error: %v, wanted %v", err, ErrUnsupportedDIDMethod)
+			t.Errorf("expected error for %s", did)
+		} else if ok := errors.Is(err, ErrUnsupportedDIDMethod); !ok {
+			t.Errorf("invalid error for %s: %v, wanted %v", did, err, ErrUnsupportedDIDMethod)
 		}
 	}
 }

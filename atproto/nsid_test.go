@@ -63,12 +63,10 @@ func TestParseNSID(t *testing.T) {
 		}
 	})
 	for _, nsid := range invalidNSID {
-		t.Log(nsid)
 		_, err := ParseNSID(nsid)
 		if err == nil {
-			t.Fatalf("expected error for %s", nsid)
+			t.Errorf("expected error for %s", nsid)
 		}
-		//t.Log(err)
 	}
 }
 
