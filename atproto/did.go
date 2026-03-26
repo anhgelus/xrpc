@@ -11,59 +11,59 @@ import (
 	"strings"
 )
 
-// DidMethod represents a valid [Did] method.
-type DidMethod string
+// DIDMethod represents a valid [DID] method.
+type DIDMethod string
 
-func (d DidMethod) String() string {
+func (d DIDMethod) String() string {
 	return string(d)
 }
 
 const (
-	DidWeb DidMethod = "web"
-	DidPlc DidMethod = "plc"
+	DIDWeb DIDMethod = "web"
+	DIDPlc DIDMethod = "plc"
 )
 
 var (
-	regexpDidMethod     = regexp.MustCompile(`[a-z]+`)
-	regexpDidIdentifier = regexp.MustCompile(`[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]`)
+	regexpDidMethod     = regexp.MustCompile(`^[a-z]+$`)
+	regexpDidIdentifier = regexp.MustCompile(`^[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$`)
 )
 
-func asDidMethod(raw string) (DidMethod, bool) {
+func asDIDMethod(raw string) (DIDMethod, bool) {
 	if !regexpDidMethod.MatchString(raw) {
 		return "", false
 	}
-	return DidMethod(raw), true
+	return DIDMethod(raw), true
 }
 
 const (
-	DidIdentifierMaxLength = 2048
-	DidPlcDirectory        = "https://plc.directory"
+	DIDIdentifierMaxLength = 2048
+	DIDPlcDirectory        = "https://plc.directory"
 )
 
 var (
-	ErrInvalidDid           = errors.New("invalid DID")
-	ErrUnsupportedDidMethod = errors.New("unsupported DID method")
+	ErrInvalidDID           = errors.New("invalid DID")
+	ErrUnsupportedDIDMethod = errors.New("unsupported DID method")
 )
 
-// Did represents a DID in the context of the ATProto.
+// DID represents a DID in the context of the ATProto.
 //
-// See [ParseDID] to parse a [Did].
-type Did struct {
-	Method     DidMethod
+// See [ParseDID] to parse a [DID] from a string.
+type DID struct {
+	Method     DIDMethod
 	Identifier string
 }
 
-func (d *Did) String() string {
+func (d *DID) String() string {
 	return "did:" + string(d.Method) + ":" + d.Identifier
 }
 
-// Document returns the [DidDocument] of the current [Did].
+// Document returns the [DIDDocument] of the current [DID].
 //
-// Returns [ErrDidPlcResolve] if the [DidPlcDirectory] returns an error (only if [Did.Method] is [DidPlc]).
-// Returns [ErrDidWebResolve] if the web server returns an error (only if [Did.Method] is [DidWeb]).
-func (d *Did) Document(ctx context.Context, client *http.Client) (*DidDocument, error) {
+// Returns [ErrDIDPlcResolve] if the [DIDPlcDirectory] returns an error (only if [DID.Method] is [DIDPlc]).
+// Returns [ErrDIDWebResolve] if the web server returns an error (only if [DID.Method] is [DIDWeb]).
+func (d *DID) Document(ctx context.Context, client *http.Client) (*DIDDocument, error) {
 	switch d.Method {
-	case DidWeb:
+	case DIDWeb:
 		// https://w3c-ccg.github.io/did-method-web/
 		target := strings.ReplaceAll(d.Identifier, ":", "/")
 		if !strings.Contains(target, "/") {
@@ -85,13 +85,13 @@ func (d *Did) Document(ctx context.Context, client *http.Client) (*DidDocument, 
 			return nil, err
 		}
 		if resp.StatusCode >= 400 {
-			return nil, ErrDidWebResolve{resp.StatusCode, b}
+			return nil, ErrDIDWebResolve{resp.StatusCode, b}
 		}
-		var d DidDocument
+		var d DIDDocument
 		err = json.Unmarshal(b, &d)
 		return &d, err
-	case DidPlc:
-		req, err := http.NewRequest(http.MethodGet, DidPlcDirectory+"/"+d.String(), nil)
+	case DIDPlc:
+		req, err := http.NewRequest(http.MethodGet, DIDPlcDirectory+"/"+d.String(), nil)
 		if err != nil {
 			return nil, err
 		}
@@ -105,96 +105,96 @@ func (d *Did) Document(ctx context.Context, client *http.Client) (*DidDocument, 
 			return nil, err
 		}
 		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
-			var e ErrDidPlcResolve
+			var e ErrDIDPlcResolve
 			err = json.Unmarshal(b, &e)
 			if err != nil {
 				return nil, fmt.Errorf("cannot unmarshal ErrDidPlcResolve: %w", err)
 			}
 			return nil, e
 		}
-		var d DidDocument
+		var d DIDDocument
 		err = json.Unmarshal(b, &d)
 		return &d, err
 	default:
-		return nil, ErrUnsupportedDidMethod
+		return nil, ErrUnsupportedDIDMethod
 	}
 }
 
 // ParseDID in the raw string given.
 //
-// Returns [ErrInvalidDid] is the DID is not a valid ATProto [Did].
-// Returns [ErrUnsupportedDidMethod] if the [DidMethod] is not supported.
+// Returns [ErrInvalidDID] is the DID is not a valid ATProto [DID].
+// Returns [ErrUnsupportedDIDMethod] if the [DIDMethod] is not supported.
 //
-// See [DidWeb] and [DidPlc] for supported [DidMethod].
-func ParseDID(raw string) (*Did, error) {
+// See [DIDWeb] and [DIDPlc] for supported [DIDMethod].
+func ParseDID(raw string) (*DID, error) {
 	parts := strings.SplitN(raw, ":", 3)
 	if len(parts) < 3 {
-		return nil, ErrInvalidDid
+		return nil, ErrInvalidDID
 	}
 	if parts[0] != "did" {
-		return nil, ErrInvalidDid
+		return nil, ErrInvalidDID
 	}
-	var d Did
+	var d DID
 	var ok bool
-	d.Method, ok = asDidMethod(parts[1])
+	d.Method, ok = asDIDMethod(parts[1])
 	if !ok {
-		return nil, ErrInvalidDid
+		return nil, ErrInvalidDID
 	}
 	switch d.Method {
-	case DidWeb, DidPlc:
+	case DIDWeb, DIDPlc:
 	default:
-		return nil, ErrUnsupportedDidMethod
+		return nil, ErrUnsupportedDIDMethod
 	}
 	d.Identifier = parts[2]
 	if !regexpDidIdentifier.MatchString(d.Identifier) {
-		return nil, ErrInvalidDid
+		return nil, ErrInvalidDID
 	}
-	if len([]rune(d.Identifier)) > DidIdentifierMaxLength {
-		return nil, ErrInvalidDid
+	if len([]rune(d.Identifier)) > DIDIdentifierMaxLength {
+		return nil, ErrInvalidDID
 	}
 	return &d, nil
 }
 
-type DidDocument struct {
+type DIDDocument struct {
 	ID                 string                  `json:"id"`
 	AlsoKnownAs        []string                `json:"alsoKnownAs,omitempty"`
-	VerificationMethod []DidVerificationMethod `json:"verificationMethod,omitempty"`
-	Service            []DidService            `json:"service,omitempty"`
+	VerificationMethod []DIDVerificationMethod `json:"verificationMethod,omitempty"`
+	Service            []DIDService            `json:"service,omitempty"`
 }
 
-type DidVerificationMethod struct {
+type DIDVerificationMethod struct {
 	ID                 string `json:"id"`
 	Type               string `json:"type"`
 	Controller         string `json:"controller"`
 	PublicKeyMultibase string `json:"publicKeyMultibase"`
 }
 
-type DidService struct {
+type DIDService struct {
 	ID              string `json:"id"`
 	Type            string `json:"type"`
 	ServiceEndpoint string `json:"serviceEndpoint"`
 }
 
-// ErrDidPlcResolve is returned by the [DidPlcDirectory].
+// ErrDIDPlcResolve is returned by the [DIDPlcDirectory].
 //
-// See [Did.Document].
-type ErrDidPlcResolve struct {
+// See [DID.Document].
+type ErrDIDPlcResolve struct {
 	Message string `json:"message,omitempty"`
 }
 
-func (e ErrDidPlcResolve) Error() string {
+func (e ErrDIDPlcResolve) Error() string {
 	return e.Message
 }
 
-// ErrDidWebResolve is returned by the web server.
+// ErrDIDWebResolve is returned by the web server.
 //
-// See [Did.Document].
-type ErrDidWebResolve struct {
+// See [DID.Document].
+type ErrDIDWebResolve struct {
 	StatusCode int
 	Body       []byte
 }
 
-func (e ErrDidWebResolve) Error() string {
+func (e ErrDIDWebResolve) Error() string {
 	if e.Body == nil {
 		return fmt.Sprintf("invalid status code while fetching document: %d", e.StatusCode)
 	}
