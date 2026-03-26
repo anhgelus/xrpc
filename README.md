@@ -28,7 +28,7 @@ If it is possible, we will try to make this library compatible with Indigo.
   - [x] DID
   - [x] NSID
   - [x] TID
-  - [ ] Record key
+  - [x] Record key
   - [ ] Collection
   - [ ] Handle
   - [ ] AT URI
