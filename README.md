@@ -25,7 +25,7 @@ If it is possible, we will try to make this library compatible with Indigo.
 ## Roadmap
 
 - [ ] ATProto foundations in package `atproto`
-  - [ ] DID
+  - [x] DID
   - [ ] NSID
   - [ ] TID
   - [ ] Record key

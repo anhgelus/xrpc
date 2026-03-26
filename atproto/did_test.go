@@ -1,7 +1,9 @@
 package atproto
 
 import (
+	"context"
 	"errors"
+	"net/http"
 	"testing"
 
 	"pgregory.net/rapid"
@@ -30,6 +32,11 @@ var (
 		"did:method:-:_:.",
 		"did:key:zQ3shZc2QzApp2oymGvQbzP8eKheVshBHbU4ZYjeXqwSKEn6N",
 	}
+	realDids = []string{
+		"did:plc:vtqucb4iga7b5wzza3zbz4so",
+		"did:plc:oisofpd7lj26yvgiivf3lxsi",
+		"did:plc:w7x22x56pgtta23uulbcahbo",
+	}
 )
 
 func TestAsDidMethod(t *testing.T) {
@@ -43,9 +50,9 @@ func TestAsDidMethod(t *testing.T) {
 }
 
 func genDid(t *rapid.T, label string) string {
-	method := rapid.SampledFrom([]DidMethod{DidWeb, DidPLC}).Draw(t, " method")
+	method := rapid.SampledFrom([]DidMethod{DidWeb, DidPlc}).Draw(t, " method")
 	idsFirst := rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ1234567890._:%-"))
-	idsLast := rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ1234567890._%-"))
+	idsLast := rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ1234567890._-"))
 	identifier := rapid.StringOfN(idsFirst, -1, -1, DidIdentifierMaxLength-5-len(method)).Draw(t, label+" id first") +
 		rapid.StringOfN(idsLast, 1, -1, 1).Draw(t, "id last")
 	return "did:" + method.String() + ":" + identifier
@@ -68,7 +75,7 @@ func TestParseDid(t *testing.T) {
 		if err == nil {
 			t.Fatalf("expected error for %s", did)
 		}
-		t.Log(err)
+		//t.Log(err)
 	}
 	for _, did := range invalidDidMethods {
 		t.Log(did)
@@ -78,6 +85,26 @@ func TestParseDid(t *testing.T) {
 		}
 		if ok := errors.Is(err, ErrUnsupportedDidMethod); !ok {
 			t.Errorf("invalid error: %v, wanted %v", err, ErrUnsupportedDidMethod)
+		}
+	}
+}
+
+func TestDid_Document(t *testing.T) {
+	if testing.Short() {
+		t.Skip("not doing http requests in short")
+	}
+	for _, d := range realDids {
+		t.Log(d)
+		did, err := ParseDID(d)
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc, err := did.Document(context.Background(), http.DefaultClient)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, as := range doc.AlsoKnownAs {
+			t.Log(as)
 		}
 	}
 }
