@@ -24,7 +24,7 @@ If it is possible, we will try to make this library compatible with Indigo.
 
 ## Roadmap
 
-- [ ] ATProto foundations in package `atproto`
+- [x] ATProto foundations in package `atproto`
   - [x] DID
   - [x] NSID
   - [x] TID
@@ -32,7 +32,7 @@ If it is possible, we will try to make this library compatible with Indigo.
   - [x] Handle
   - [x] AT URI
 - [ ] [Simple query and procedure](https://atproto.com/specs/xrpc#lexicon-http-endpoints)
-  - [ ] Client definition
+  - [x] Client definition
   - [ ] Lexicon definition
   - [ ] Marshal/Unmarshal
 - [ ] [Supports blob](https://atproto.com/specs/xrpc#blob-upload-and-download)

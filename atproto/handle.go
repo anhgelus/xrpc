@@ -88,6 +88,8 @@ func (h Handle) MarshalJSON() ([]byte, error) {
 
 // Directory is used to get [DID] from [Handle].
 //
+// Can be used concurrently by multiple goroutines.
+//
 // Use [Directory.ResolveHandle] to retrieve the [DIDDocument] associated with an [Handle].
 //
 // See [NewDirectory] to create a new [Directory].
