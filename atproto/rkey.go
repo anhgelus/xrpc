@@ -1,6 +1,7 @@
 package atproto
 
 import (
+	"encoding/json"
 	"errors"
 	"regexp"
 )
@@ -35,4 +36,18 @@ func (r RecordKey) TID() (TID, error) {
 
 func (r RecordKey) NSID() (*NSID, error) {
 	return ParseNSID(r.String())
+}
+
+func (r RecordKey) MarshalJSON() ([]byte, error) {
+	return []byte(r.String()), nil
+}
+
+func (r *RecordKey) UnmarshalJSON(b []byte) error {
+	var s string
+	err := json.Unmarshal(b, &s)
+	if err != nil {
+		return err
+	}
+	*r, err = ParseRecordKey(s)
+	return err
 }

@@ -1,6 +1,7 @@
 package atproto
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -63,10 +64,37 @@ func (r RawURI) DID() (URI[*DID], error) {
 	return ParseURI[*DID](r.raw)
 }
 
+func (r RawURI) MarshalJSON() ([]byte, error) {
+	if r.IsDID() {
+		did, err := r.DID()
+		if err != nil {
+			return nil, err
+		}
+		return []byte(did.String()), nil
+	} else if r.IsHandle() {
+		h, err := r.Handle()
+		if err != nil {
+			return nil, err
+		}
+		return []byte(h.String()), nil
+	}
+	panic("unsupported authority")
+}
+
+func (r *RawURI) UnmarshalJSON(b []byte) error {
+	var s string
+	err := json.Unmarshal(b, &s)
+	if err != nil {
+		return err
+	}
+	*r, err = ParseRawURI(s)
+	return err
+}
+
 // URI is an ATProto URI Scheme (at://).
 //
 // See [ParseURI] to parse an [URI] from a string.
-// See [RawURI] if the [Authority] is unknown.
+// See [RawURI] if the [Authority] is unknown, like in JSON.
 type URI[T Authority] struct {
 	authority  T
 	collection *NSID

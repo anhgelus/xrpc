@@ -1,6 +1,7 @@
 package atproto
 
 import (
+	"encoding/json"
 	"errors"
 	"regexp"
 	"strings"
@@ -15,8 +16,26 @@ type NSID struct {
 	Name      string
 }
 
-func (n NSID) String() string {
+func (n *NSID) String() string {
 	return n.Authority + "." + n.Name
+}
+
+func (n *NSID) UnmarshalJSON(b []byte) error {
+	var s string
+	err := json.Unmarshal(b, &s)
+	if err != nil {
+		return err
+	}
+	nsid, err := ParseNSID(s)
+	if err != nil {
+		return nil
+	}
+	*n = *nsid
+	return nil
+}
+
+func (n *NSID) MarshalJSON() ([]byte, error) {
+	return []byte(n.String()), nil
 }
 
 var (
@@ -122,4 +141,12 @@ func (b NSIDBuilder) Finish(name string) *NSID {
 
 func (b NSIDBuilder) String() string {
 	return b.authority
+}
+
+func (b NSIDBuilder) MarshalJSON() ([]byte, error) {
+	panic("cannot marshal NSIDBuilder")
+}
+
+func (b NSIDBuilder) UnmarshalJSON(_ []byte) error {
+	panic("cannot unmarshal NSIDBuilder")
 }

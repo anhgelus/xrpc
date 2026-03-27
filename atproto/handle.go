@@ -2,6 +2,7 @@ package atproto
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -71,6 +72,25 @@ func (h Handle) URI() URI[Handle] {
 	return URI[Handle]{authority: h}
 }
 
+func (h *Handle) UnmarshalJSON(b []byte) error {
+	var s string
+	err := json.Unmarshal(b, &s)
+	if err != nil {
+		return err
+	}
+	*h, err = ParseHandle(s)
+	return err
+}
+
+func (h Handle) MarshalJSON() ([]byte, error) {
+	return []byte(h.String()), nil
+}
+
+// Directory is used to get [DID] from [Handle].
+//
+// Use [Directory.ResolveHandle] to retrieve the [DIDDocument] associated with an [Handle].
+//
+// See [NewDirectory] to create a new [Directory].
 type Directory struct {
 	mu        sync.RWMutex
 	client    *http.Client
@@ -79,6 +99,8 @@ type Directory struct {
 	cachedFor time.Duration
 }
 
+// NewDirectory returns a new [Directory] with the given [http.Client] (for well-known verification), [net.resolver]
+// (for DNS verification) and [time.Duration] (for the time cached in a map).
 func NewDirectory(client *http.Client, resolver *net.Resolver, cachedFor time.Duration) *Directory {
 	return &Directory{
 		client:    client,
@@ -88,6 +110,11 @@ func NewDirectory(client *http.Client, resolver *net.Resolver, cachedFor time.Du
 	}
 }
 
+// ResolveHandle to get the [DIDDocument] associated with.
+//
+// Returns [ErrInvalidHandle] if the [Handle] is invalid.
+// Returns [ErrHandleNotFound] if the [Handle] is not found.
+// Returns [ErrCannotResolveHandle] if the [DID] stored is invalid.
 func (d *Directory) ResolveHandle(ctx context.Context, h Handle) (*DIDDocument, error) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
@@ -156,7 +183,7 @@ func (d *Directory) lookupHandle(ctx context.Context, h Handle) (*DID, error) {
 	if e == nil {
 		return did, nil
 	}
-	return nil, err
+	return nil, fmt.Errorf("%w: invalid DID in well-known: %w", ErrCannotResolveHandle, err)
 }
 
 func parseDidTxtRec(res []string) (*DID, error) {

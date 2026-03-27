@@ -1,6 +1,7 @@
 package atproto
 
 import (
+	"encoding/json"
 	"errors"
 	"regexp"
 	"strings"
@@ -98,6 +99,20 @@ func (t TID) Time() time.Time {
 func (t TID) ClockID() uint {
 	i := t.Uint64()
 	return uint(i & clockIdBits)
+}
+
+func (t TID) MarshalJSON() ([]byte, error) {
+	return []byte(t.String()), nil
+}
+
+func (t *TID) UnmarshalJSON(b []byte) error {
+	var s string
+	err := json.Unmarshal(b, &s)
+	if err != nil {
+		return err
+	}
+	*t, err = ParseTID(s)
+	return err
 }
 
 // TIDGenerator generates [TID] that always increase.
