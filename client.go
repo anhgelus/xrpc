@@ -37,7 +37,7 @@ func NewClient(client *http.Client) *Client {
 // id is the [atproto.NSID] of the endpoint used.
 // params are the [url.Values] used during the call.
 //
-// Returns [ErrRequest] if the response code indicates an error 400.
+// Returns [ErrRequest] if the response code indicates an error >= 400.
 func (c *Client) Query(ctx context.Context, pds string, id *atproto.NSID, params url.Values) ([]byte, error) {
 	return c.do(ctx, Query, pds, id, params, nil)
 }
@@ -91,7 +91,7 @@ func (r RawBodyRequest) ContentType() string {
 // params are the [url.Values] used during the call.
 // body is the body of the request.
 //
-// Returns [ErrRequest] if the response code indicates an error 400.
+// Returns [ErrRequest] if the response code indicates an error >= 400.
 func (c *Client) Procedure(ctx context.Context, pds string, id *atproto.NSID, params url.Values, body BodyRequest) ([]byte, error) {
 	return c.do(ctx, Procedure, pds, id, params, body)
 }
@@ -135,7 +135,18 @@ type ErrRequest struct {
 
 func (r ErrRequest) Error() string {
 	if r.content != nil {
-		return fmt.Sprintf("%s (status code: %d)", r.content, r.statusCode)
+		var v struct {
+			Error   string `json:"string"`
+			Message string `json:"omitempty"`
+		}
+		err := json.Unmarshal(r.content, &v)
+		if err != nil {
+			return fmt.Sprintf("%s (status code: %d)", r.content, r.statusCode)
+		}
+		if v.Message != "" {
+			return fmt.Sprintf("%s: %s", v.Error, v.Message)
+		}
+		return v.Error
 	}
 	return fmt.Sprintf("invalid status code: %d", r.statusCode)
 }
