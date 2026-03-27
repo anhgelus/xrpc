@@ -30,7 +30,7 @@ If it is possible, we will try to make this library compatible with Indigo.
   - [x] TID
   - [x] Record key
   - [x] Handle
-  - [ ] AT URI
+  - [x] AT URI
 - [ ] [Simple query and procedure](https://atproto.com/specs/xrpc#lexicon-http-endpoints)
   - [ ] Client definition
   - [ ] Lexicon definition

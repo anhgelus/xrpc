@@ -51,7 +51,7 @@ func TestAsDidMethod(t *testing.T) {
 }
 
 func genDid(t *rapid.T, label string) string {
-	method := rapid.SampledFrom([]DIDMethod{DIDWeb, DIDPlc}).Draw(t, " method")
+	method := rapid.SampledFrom([]DIDMethod{DIDWeb, DIDPlc}).Draw(t, label+" method")
 	idsFirst := rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ1234567890._:%-"))
 	idsLast := rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ1234567890._-"))
 	identifier := rapid.StringOfN(idsFirst, -1, -1, DIDIdentifierMaxLength-5-len(method)).Draw(t, label+" id first") +

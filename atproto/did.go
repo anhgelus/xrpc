@@ -57,8 +57,8 @@ func (d *DID) String() string {
 	return "did:" + string(d.Method) + ":" + d.Identifier
 }
 
-func (d *DID) URI() string {
-	return "at://" + d.String()
+func (d *DID) URI() URI[*DID] {
+	return URI[*DID]{authority: d}
 }
 
 // Document returns the [DIDDocument] of the current [DID].

@@ -23,14 +23,9 @@ var (
 	ErrCannotResolveHandle = errors.New("cannot resolve handle")
 )
 
-// Identifier is used to identify a user.
-// It can be a [DID] or an [Handle].
-type Identifier interface {
-	Handle | DID
-	URI() string
-}
-
 // Handle is mutable and human-friendly account username, in the form of a DNS hostname.
+//
+// See [ParseHandle] to parse an [Handle] from a string.
 type Handle string
 
 // ParseHandle in the raw string given.
@@ -72,8 +67,8 @@ func (h Handle) String() string {
 	return string(h)
 }
 
-func (h Handle) URI() string {
-	return "at://" + h.String()
+func (h Handle) URI() URI[Handle] {
+	return URI[Handle]{authority: h}
 }
 
 type Directory struct {
@@ -107,7 +102,7 @@ func (d *Directory) ResolveHandle(ctx context.Context, h Handle) (*DIDDocument, 
 	if err != nil {
 		return nil, err
 	}
-	if !slices.Contains(doc.AlsoKnownAs, h.URI()) {
+	if !slices.Contains(doc.AlsoKnownAs, h.URI().String()) {
 		return nil, ErrInvalidHandle
 	}
 	d.mu.RUnlock()

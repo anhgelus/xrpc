@@ -38,6 +38,9 @@ func ParseTID(raw string) (TID, error) {
 }
 
 func newTIDFromInteger(t int64, clockId uint) TID {
+	if clockId > clockIdBits {
+		panic("invalid clock id")
+	}
 	v := (uint64(t&0x1F_FFFF_FFFF_FFFF) << 10) | uint64(clockId&clockIdBits)
 	v = (0x7FFF_FFFF_FFFF_FFFF & v)
 	var sb strings.Builder
@@ -108,6 +111,9 @@ type TIDGenerator struct {
 
 // NewTIDGenerator using clockID as base clock.
 func NewTIDGenerator(clockId uint) *TIDGenerator {
+	if clockId > clockIdBits {
+		panic("invalid clock id")
+	}
 	return &TIDGenerator{clock: clockId}
 }
 

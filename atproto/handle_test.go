@@ -66,7 +66,7 @@ func TestDirectory_ResolveHandle(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !slices.Contains(doc.AlsoKnownAs, h.URI()) {
+		if !slices.Contains(doc.AlsoKnownAs, h.URI().String()) {
 			t.Errorf("invalid also known as: %v, must contains %s", doc.AlsoKnownAs, "at://"+h.String())
 		}
 		t.Logf("%s's did: %s", h, doc.DID)
