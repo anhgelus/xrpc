@@ -57,6 +57,10 @@ func (d *DID) String() string {
 	return "did:" + string(d.Method) + ":" + d.Identifier
 }
 
+func (d *DID) URI() string {
+	return "at://" + d.String()
+}
+
 // Document returns the [DIDDocument] of the current [DID].
 //
 // Returns [ErrDIDPlcResolve] if the [DIDPlcDirectory] returns an error (only if [DID.Method] is [DIDPlc]).
@@ -120,6 +124,24 @@ func (d *DID) Document(ctx context.Context, client *http.Client) (*DIDDocument, 
 	}
 }
 
+func (d *DID) MarshalJSON() ([]byte, error) {
+	return []byte(d.String()), nil
+}
+
+func (d *DID) UnmarshalJSON(b []byte) error {
+	var raw string
+	err := json.Unmarshal(b, &raw)
+	if err != nil {
+		return err
+	}
+	did, err := ParseDID(raw)
+	if err != nil {
+		return err
+	}
+	*d = *did
+	return nil
+}
+
 // ParseDID in the raw string given.
 //
 // Returns [ErrInvalidDID] is the DID is not a valid ATProto [DID].
@@ -156,7 +178,7 @@ func ParseDID(raw string) (*DID, error) {
 }
 
 type DIDDocument struct {
-	ID                 string                  `json:"id"`
+	DID                *DID                    `json:"id"`
 	AlsoKnownAs        []string                `json:"alsoKnownAs,omitempty"`
 	VerificationMethod []DIDVerificationMethod `json:"verificationMethod,omitempty"`
 	Service            []DIDService            `json:"service,omitempty"`

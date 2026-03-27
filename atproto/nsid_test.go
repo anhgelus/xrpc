@@ -16,7 +16,7 @@ var (
 	}
 )
 
-func genNSID(t *rapid.T, label string) (*NSID, string) {
+func genDomain(t *rapid.T, isNsid bool, label string) (*NSID, string) {
 	ascii := rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"))
 	asciiNums := rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))
 	asciiNumsHyp := rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"))
@@ -29,27 +29,39 @@ func genNSID(t *rapid.T, label string) (*NSID, string) {
 		return strings.ToLower(a)
 	}
 	var sb strings.Builder
-	sb.WriteString(authority(label+" tld", asciiNumsHyp))
+	if isNsid {
+		sb.WriteString(authority(label+" tld", asciiNumsHyp))
+	}
 	ok := true
 	for i := 0; ok; i++ {
 		s := authority(fmt.Sprintf("%s sub %d", label, i), asciiNumsHyp)
 		if sb.Len()+len(s)+1 <= NSIDMaxLength {
-			sb.WriteRune('.')
+			if isNsid {
+				sb.WriteRune('.')
+			}
 			sb.WriteString(s)
+			if !isNsid {
+				sb.WriteRune('.')
+			}
 			ok = rapid.Bool().Draw(t, label+" continue?")
 		} else {
 			ok = false
 		}
 	}
+	if !isNsid {
+		sb.WriteString(authority(label+" tld", asciiNumsHyp))
+	}
 	var nsid NSID
 	nsid.Authority = strings.ToLower(sb.String())
-	nsid.Name = authority(label+" name", asciiNums)
+	if isNsid {
+		nsid.Name = authority(label+" name", asciiNums)
+	}
 	return &nsid, nsid.String()
 }
 
 func TestParseNSID(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		nsid, raw := genNSID(t, "nsid")
+		nsid, raw := genDomain(t, true, "nsid")
 		t.Log(raw)
 		n, err := ParseNSID(raw)
 		if err != nil {
@@ -72,9 +84,9 @@ func TestParseNSID(t *testing.T) {
 
 func TestNSIDBuilder(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		tt1, _ := genNSID(t, "base")
+		tt1, _ := genDomain(t, true, "base")
 		base := NewNSIDBuilder(tt1.Authority)
-		tt2, _ := genNSID(t, "next")
+		tt2, _ := genDomain(t, true, "next")
 		baseNext := base.Add(tt2.Authority)
 		if base.String() == baseNext.String() {
 			t.Errorf("base is baseNext: %s, %s", base.String(), baseNext.String())

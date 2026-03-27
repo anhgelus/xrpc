@@ -66,7 +66,7 @@ func TestRecordKey_TID(t *testing.T) {
 
 func TestRecordKey_NSID(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		nsid, rawNsid := genNSID(t, "nsid")
+		nsid, rawNsid := genDomain(t, true, "nsid")
 		rkey, err := ParseRecordKey(rawNsid)
 		if err != nil {
 			t.Fatal(err)

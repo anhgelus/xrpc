@@ -104,5 +104,8 @@ func TestDid_Document(t *testing.T) {
 		for _, as := range doc.AlsoKnownAs {
 			t.Log(as)
 		}
+		if *doc.DID != *did {
+			t.Errorf("invalid did resolved: %s, wanted %s", doc.DID, did)
+		}
 	}
 }

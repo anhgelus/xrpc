@@ -29,8 +29,7 @@ If it is possible, we will try to make this library compatible with Indigo.
   - [x] NSID
   - [x] TID
   - [x] Record key
-  - [ ] Collection
-  - [ ] Handle
+  - [x] Handle
   - [ ] AT URI
 - [ ] [Simple query and procedure](https://atproto.com/specs/xrpc#lexicon-http-endpoints)
   - [ ] Client definition
