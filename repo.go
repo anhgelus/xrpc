@@ -10,13 +10,6 @@ import (
 	"tangled.org/anhgelus.world/xrpc/atproto"
 )
 
-// Record represents an ATProto record.
-type Record interface {
-	// Type returns the [atproto.NSID] of the lexicon behind the [Record].
-	// Must be stateless.
-	Type() *atproto.NSID
-}
-
 // RecordStored represents a [Record] containg values about how it is stored.
 type RecordStored[T Record] struct {
 	Value T              `json:"value"`

@@ -40,6 +40,7 @@ type BaseClient struct {
 	client *http.Client
 }
 
+// NewClient creates a new [BaseClient].
 func NewClient(client *http.Client) *BaseClient {
 	return &BaseClient{client}
 }
