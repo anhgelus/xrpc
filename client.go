@@ -7,9 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-
-	"tangled.org/anhgelus.world/xrpc/atproto"
 )
 
 const (
@@ -18,85 +15,44 @@ const (
 	BaseURL   = "xrpc"
 )
 
-// Client is a simple ATProto XRPC client.
+// Client represents a general ATProto XRPC client.
 //
 // Can be used concurrently by multiple goroutines.
 //
-// See [NewClient] to create a new [Client].
-type Client struct {
+// See [NewClient] to create a new [BaseClient].
+type Client interface {
+	// Query performs an XRPC [Query].
+	//
+	// Returns [ErrRequest] if the response code indicates an error >= 400.
+	Query(context.Context, RequestBuilder) ([]byte, error)
+	// Procedure performs an XRPC [Procedure].
+	//
+	// body is the body of the request.
+	//
+	// Returns [ErrRequest] if the response code indicates an error >= 400.
+	Procedure(context.Context, RequestBuilder, BodyRequest) ([]byte, error)
+	// NewRequest returns the base [RequestBuilder] used.
+	NewRequest() RequestBuilder
+}
+
+// BaseClient is a simple ATProto XRPC client.
+type BaseClient struct {
 	client *http.Client
 }
 
-func NewClient(client *http.Client) *Client {
-	return &Client{client}
+func NewClient(client *http.Client) *BaseClient {
+	return &BaseClient{client}
 }
 
-// Query performs an XRPC [Query].
-//
-// pds is the base url of the PDS.
-// id is the [atproto.NSID] of the endpoint used.
-// params are the [url.Values] used during the call.
-//
-// Returns [ErrRequest] if the response code indicates an error >= 400.
-func (c *Client) Query(ctx context.Context, pds string, id *atproto.NSID, params url.Values) ([]byte, error) {
-	return c.do(ctx, Query, pds, id, params, nil)
+func (c *BaseClient) Query(ctx context.Context, rb RequestBuilder) ([]byte, error) {
+	return c.do(ctx, Query, rb, nil)
 }
 
-// BodyRequest contains data sent during a [Client.Procedure].
-//
-// See [JsonBodyRequest] to encode anything into JSON.
-// See [RawBodyRequest] to send raw data.
-type BodyRequest interface {
-	Body() ([]byte, error)
-	ContentType() string
+func (c *BaseClient) Procedure(ctx context.Context, rb RequestBuilder, body BodyRequest) ([]byte, error) {
+	return c.do(ctx, Procedure, rb, body)
 }
 
-// JsonBodyRequest is a [BodyRequest] that encodes the data into JSON.
-//
-// See [AsJsonBodyRequest] to create a new [JsonBodyRequest].
-type JsonBodyRequest struct {
-	any
-}
-
-func AsJsonBodyRequest(v any) JsonBodyRequest {
-	return JsonBodyRequest{v}
-}
-
-func (j JsonBodyRequest) Body() ([]byte, error) {
-	return json.Marshal(j)
-}
-
-func (j JsonBodyRequest) ContentType() string {
-	return "application/json"
-}
-
-// RawBodyRequest is a [BodyRequest] that contains raw data.
-type RawBodyRequest struct {
-	Content []byte
-	Type    string
-}
-
-func (r RawBodyRequest) Body() ([]byte, error) {
-	return r.Content, nil
-}
-
-func (r RawBodyRequest) ContentType() string {
-	return r.Type
-}
-
-// Procedure performs an XRPC [Procedure].
-//
-// pds is the base url of the PDS.
-// id is the [atproto.NSID] of the endpoint used.
-// params are the [url.Values] used during the call.
-// body is the body of the request.
-//
-// Returns [ErrRequest] if the response code indicates an error >= 400.
-func (c *Client) Procedure(ctx context.Context, pds string, id *atproto.NSID, params url.Values, body BodyRequest) ([]byte, error) {
-	return c.do(ctx, Procedure, pds, id, params, body)
-}
-
-func (c *Client) do(ctx context.Context, method string, pds string, id *atproto.NSID, params url.Values, body BodyRequest) ([]byte, error) {
+func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, body BodyRequest) ([]byte, error) {
 	var content io.Reader
 	if body != nil {
 		b, err := body.Body()
@@ -106,11 +62,10 @@ func (c *Client) do(ctx context.Context, method string, pds string, id *atproto.
 		content = bytes.NewReader(b)
 	}
 
-	req, err := http.NewRequest(method, pds, content)
+	req, err := http.NewRequest(method, rb.Build(), content)
 	if err != nil {
 		return nil, err
 	}
-	req.URL.Path += BaseURL + "/" + id.String() + "?" + params.Encode()
 	req.Header.Set("Accept", "application/json")
 	if body != nil {
 		req.Header.Set("Content-Type", body.ContentType())
@@ -128,25 +83,32 @@ func (c *Client) do(ctx context.Context, method string, pds string, id *atproto.
 	return io.ReadAll(resp.Body)
 }
 
+func (c *BaseClient) NewRequest() RequestBuilder {
+	return RequestBuilder{}
+}
+
+// ErrRequest is returned by a [Client] when an [http.Response] contains a status code >= 400.
 type ErrRequest struct {
-	statusCode int
-	content    []byte
+	// StatusCode of the response.
+	StatusCode int
+	// Content of the response.
+	Content []byte
 }
 
 func (r ErrRequest) Error() string {
-	if r.content != nil {
+	if r.Content != nil {
 		var v struct {
 			Error   string `json:"string"`
 			Message string `json:"omitempty"`
 		}
-		err := json.Unmarshal(r.content, &v)
+		err := json.Unmarshal(r.Content, &v)
 		if err != nil {
-			return fmt.Sprintf("%s (status code: %d)", r.content, r.statusCode)
+			return fmt.Sprintf("%s (status code: %d)", r.Content, r.StatusCode)
 		}
 		if v.Message != "" {
 			return fmt.Sprintf("%s: %s", v.Error, v.Message)
 		}
 		return v.Error
 	}
-	return fmt.Sprintf("invalid status code: %d", r.statusCode)
+	return fmt.Sprintf("invalid status code: %d", r.StatusCode)
 }

@@ -31,7 +31,7 @@ var repoNSID = atproto.NewNSIDBuilder("com.atproto.repo")
 // If cid is omitted, it will return the latest version of the [Record].
 func GetRecord[T Record, A atproto.Authority](
 	ctx context.Context,
-	client *Client,
+	client Client,
 	pds string,
 	authority A,
 	rkey atproto.RecordKey,
@@ -45,7 +45,11 @@ func GetRecord[T Record, A atproto.Authority](
 	if cid != "" {
 		params.Add("cid", cid)
 	}
-	b, err := client.Query(ctx, pds, repoNSID.Finish("getRecord"), params)
+	req := client.NewRequest().
+		PDS(pds).
+		Endpoint(repoNSID.Finish("getRecord")).
+		Params(params)
+	b, err := client.Query(ctx, req)
 	if err != nil {
 		return v, err
 	}
@@ -64,7 +68,7 @@ type listOut[T Record] struct {
 // cursor is optional.
 func ListRecords[T Record, A atproto.Authority](
 	ctx context.Context,
-	client *Client,
+	client Client,
 	pds string,
 	authority A,
 	limit uint8,
@@ -83,7 +87,11 @@ func ListRecords[T Record, A atproto.Authority](
 		params.Add("cursor", cursor)
 	}
 	params.Add("reverse", fmt.Sprintf("%t", reverse))
-	b, err := client.Query(ctx, pds, repoNSID.Finish("listRecords"), params)
+	req := client.NewRequest().
+		PDS(pds).
+		Endpoint(repoNSID.Finish("listRecords")).
+		Params(params)
+	b, err := client.Query(ctx, req)
 	if err != nil {
 		return nil, "", err
 	}
