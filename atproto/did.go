@@ -57,15 +57,23 @@ func (d *DID) String() string {
 	return "did:" + string(d.Method) + ":" + d.Identifier
 }
 
+func (d *DID) PDS(ctx context.Context, dir *Directory) (string, error) {
+	doc, err := dir.ResolveDID(ctx, d)
+	if err != nil {
+		return "", err
+	}
+	pds, ok := doc.PDS()
+	if !ok {
+		return "", ErrCannotFindPDS
+	}
+	return pds, nil
+}
+
 func (d *DID) URI() URI[*DID] {
 	return URI[*DID]{authority: d}
 }
 
-// Document returns the [DIDDocument] of the current [DID].
-//
-// Returns [ErrDIDPlcResolve] if the [DIDPlcDirectory] returns an error (only if [DID.Method] is [DIDPlc]).
-// Returns [ErrDIDWebResolve] if the web server returns an error (only if [DID.Method] is [DIDWeb]).
-func (d *DID) Document(ctx context.Context, client *http.Client) (*DIDDocument, error) {
+func (d *DID) document(ctx context.Context, client *http.Client) (*DIDDocument, error) {
 	switch d.Method {
 	case DIDWeb:
 		// https://w3c-ccg.github.io/did-method-web/
@@ -188,6 +196,26 @@ type DIDDocument struct {
 	Service            []DIDService            `json:"service,omitempty"`
 }
 
+func (d *DIDDocument) PDS() (string, bool) {
+	for _, s := range d.Service {
+		if s.ID == "#atproto_pds" && s.Type == "AtprotoPersonalDataServer" {
+			return s.ServiceEndpoint, true
+		}
+	}
+	return "", false
+}
+
+func (d *DIDDocument) Handle() (Handle, bool) {
+	for _, as := range d.AlsoKnownAs {
+		b, n, ok := strings.Cut(as, "at://")
+		if ok && b == "" {
+			h, err := ParseHandle(n)
+			return h, err == nil
+		}
+	}
+	return "", false
+}
+
 type DIDVerificationMethod struct {
 	ID                 string `json:"id"`
 	Type               string `json:"type"`
@@ -203,7 +231,7 @@ type DIDService struct {
 
 // ErrDIDPlcResolve is returned by the [DIDPlcDirectory].
 //
-// See [DID.Document].
+// See [DID.document].
 type ErrDIDPlcResolve struct {
 	Message string `json:"message,omitempty"`
 }
@@ -214,7 +242,7 @@ func (e ErrDIDPlcResolve) Error() string {
 
 // ErrDIDWebResolve is returned by the web server.
 //
-// See [DID.Document].
+// See [DID.document].
 type ErrDIDWebResolve struct {
 	StatusCode int
 	Body       []byte

@@ -8,7 +8,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -68,6 +67,18 @@ func (h Handle) String() string {
 	return string(h)
 }
 
+func (h Handle) PDS(ctx context.Context, dir *Directory) (string, error) {
+	doc, err := dir.ResolveHandle(ctx, h)
+	if err != nil {
+		return "", err
+	}
+	pds, ok := doc.PDS()
+	if !ok {
+		return "", ErrCannotFindPDS
+	}
+	return pds, nil
+}
+
 func (h Handle) URI() URI[Handle] {
 	return URI[Handle]{authority: h}
 }
@@ -101,7 +112,7 @@ type Directory struct {
 	mu        sync.RWMutex
 	client    *http.Client
 	resolver  *net.Resolver
-	cache     map[Handle]*DIDDocument
+	cache     map[string]*DIDDocument
 	cachedFor time.Duration
 }
 
@@ -111,42 +122,65 @@ func NewDirectory(client *http.Client, resolver *net.Resolver, cachedFor time.Du
 	return &Directory{
 		client:    client,
 		resolver:  resolver,
-		cache:     make(map[Handle]*DIDDocument),
+		cache:     make(map[string]*DIDDocument),
 		cachedFor: cachedFor,
 	}
 }
 
+func setCache[A Authority](d *Directory, doc *DIDDocument, authority A) {
+	d.mu.RUnlock()
+	d.mu.Lock()
+	d.cache[authority.String()] = doc
+	go func(authority A) {
+		time.Sleep(d.cachedFor * time.Minute)
+		delete(d.cache, authority.String())
+	}(authority)
+	d.mu.Unlock()
+	d.mu.RLock()
+}
+
+// ResolveDID returns the [DIDDocument] associated with.
+//
+// Returns [ErrDIDPlcResolve] if the [DIDPlcDirectory] returns an error (only if [DID.Method] is [DIDPlc]).
+// Returns [ErrDIDWebResolve] if the web server returns an error (only if [DID.Method] is [DIDWeb]).
+func (d *Directory) ResolveDID(ctx context.Context, did *DID) (*DIDDocument, error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	if doc, ok := d.cache[did.String()]; ok {
+		return doc, nil
+	}
+	doc, err := did.document(ctx, d.client)
+	if err != nil {
+		return nil, err
+	}
+	setCache(d, doc, did)
+	return doc, nil
+}
+
 // ResolveHandle to get the [DIDDocument] associated with.
 //
-// Returns [ErrInvalidHandle] if the [Handle] is invalid.
+// Returns [ErrInvalidHandle] if the [Handle] is invalid (must display [HandleInvalid] in this case).
 // Returns [ErrHandleNotFound] if the [Handle] is not found.
 // Returns [ErrCannotResolveHandle] if the [DID] stored is invalid.
 func (d *Directory) ResolveHandle(ctx context.Context, h Handle) (*DIDDocument, error) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	if doc, ok := d.cache[h]; ok {
+	if doc, ok := d.cache[h.String()]; ok {
 		return doc, nil
 	}
 	did, err := d.lookupHandle(ctx, h)
 	if err != nil {
 		return nil, err
 	}
-	doc, err := did.Document(ctx, d.client)
+	doc, err := did.document(ctx, d.client)
 	if err != nil {
 		return nil, err
 	}
-	if !slices.Contains(doc.AlsoKnownAs, h.URI().String()) {
+	res, ok := doc.Handle()
+	if !ok || res != h {
 		return nil, ErrInvalidHandle
 	}
-	d.mu.RUnlock()
-	d.mu.Lock()
-	d.cache[h] = doc
-	go func(h Handle) {
-		time.Sleep(d.cachedFor * time.Minute)
-		delete(d.cache, h)
-	}(h)
-	d.mu.Unlock()
-	d.mu.RLock()
+	setCache(d, doc, h)
 	return doc, nil
 }
 

@@ -1,17 +1,21 @@
 package atproto
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 )
 
+var ErrCannotFindPDS = errors.New("cannot find PDS")
+
 // Authority is used to identify a user.
 // It can be a [DID] or an [Handle].
 type Authority interface {
 	Handle | *DID
 	fmt.Stringer
+	PDS(context.Context, *Directory) (string, error)
 }
 
 var ErrInvalidURI = errors.New("invalid AT URI")
