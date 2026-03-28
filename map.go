@@ -17,48 +17,28 @@ type options struct {
 	fn  func(any) (any, bool)
 }
 
-var jsonOpts = []options{
-	{"omitempty", func(v any) (any, bool) {
-		if v == nil {
-			return nil, false
-		}
-		refVal := reflect.ValueOf(v)
-		if reflect.DeepEqual(v, reflect.Zero(refVal.Type()).Interface()) {
-			return v, false
-		}
-		return v, true
-	}},
-}
-
-var mapOpts = []options{
-	{"string", func(v any) (any, bool) {
-		if cv, ok := v.(fmt.Stringer); ok {
-			return cv.String(), true
-		}
-		return fmt.Sprintf("%v", v), true
-	}},
-}
-
-func getElem(v reflect.Value) (any, error) {
-	if !v.CanInterface() {
-		return nil, nil
+var (
+	jsonOpts = []options{
+		{"omitempty", func(v any) (any, bool) {
+			if v == nil {
+				return nil, false
+			}
+			refVal := reflect.ValueOf(v)
+			if reflect.DeepEqual(v, reflect.Zero(refVal.Type()).Interface()) {
+				return v, false
+			}
+			return v, true
+		}},
 	}
-	val := v.Interface()
-	if conv, ok := val.(MarshalerMap); ok {
-		return conv.MarshalMap()
+	mapOpts = []options{
+		{"string", func(v any) (any, bool) {
+			if cv, ok := v.(fmt.Stringer); ok {
+				return cv.String(), true
+			}
+			return fmt.Sprintf("%v", v), true
+		}},
 	}
-	switch v.Kind() {
-	case reflect.Struct:
-		return MarshalToMap(val)
-	case reflect.Pointer:
-		if v.IsNil() {
-			return nil, nil
-		}
-		return getElem(v.Elem())
-	default:
-		return val, nil
-	}
-}
+)
 
 // MarshalToMap transforms a struct into a map.
 //
@@ -82,6 +62,11 @@ func getElem(v reflect.Value) (any, error) {
 //
 // to the field.
 func MarshalToMap(v any) (any, error) {
+	// if custom
+	if conv, ok := v.(MarshalerMap); ok && v != nil {
+		return conv.MarshalMap()
+	}
+	// if not a struct
 	ref := reflect.ValueOf(v)
 	switch ref.Kind() {
 	case reflect.Struct:
@@ -93,16 +78,14 @@ func MarshalToMap(v any) (any, error) {
 	default:
 		return v, nil
 	}
-	if conv, ok := v.(MarshalerMap); ok {
-		return conv.MarshalMap()
-	}
+	// handling struct
 	refType := ref.Type()
 	fields := ref.NumField()
 	mp := make(map[string]any, fields)
 	for i := range fields {
 		field := ref.Field(i)
 		fieldType := refType.Field(i)
-		val, err := getElem(field)
+		val, err := MarshalToMap(field.Interface())
 		if err != nil {
 			return nil, err
 		}
@@ -110,6 +93,10 @@ func MarshalToMap(v any) (any, error) {
 		if ok {
 			mp[name] = val
 		}
+	}
+	// if struct is a record
+	if rec, ok := v.(Record); ok {
+		mp["$type"] = rec.Type()
 	}
 	return mp, nil
 }
@@ -126,23 +113,21 @@ func handleTags(fieldType reflect.StructField, name string, val any) (string, an
 		return name, val, false
 	}
 	if len(data) > 1 {
-		tagOpts := data[1:]
-		ok := true
-		for i := 0; i < len(jsonOpts) && ok; i++ {
-			opt := jsonOpts[i]
-			if slices.Contains(tagOpts, opt.key) {
-				val, ok = opt.fn(val)
-			}
-		}
+		var ok bool
+		name, val, ok = applyOpts(data[1:], jsonOpts, name, val)
 		if !ok {
-			return name, val, false
+			return name, val, ok
 		}
 	}
 
 	data = strings.Split(fieldType.Tag.Get("map"), ",")
+	return applyOpts(data, mapOpts, name, val)
+}
+
+func applyOpts(data []string, opts []options, name string, val any) (string, any, bool) {
 	ok := true
-	for i := 0; i < len(mapOpts) && ok; i++ {
-		opt := mapOpts[i]
+	for i := 0; i < len(opts) && ok; i++ {
+		opt := opts[i]
 		if slices.Contains(data, opt.key) {
 			val, ok = opt.fn(val)
 		}
