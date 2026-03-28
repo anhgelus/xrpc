@@ -31,9 +31,5 @@ func FetchURI[A atproto.Authority](ctx context.Context, client Client, uri atpro
 	if uri.Collection() == nil || uri.RecordKey() == nil {
 		return nil, ErrIncompleteURI
 	}
-	pds, err := uri.Authority().PDS(ctx, client.Directory())
-	if err != nil {
-		return nil, err
-	}
-	return rawGetRecord(ctx, client, pds, uri.Authority(), uri.Collection(), *uri.RecordKey(), "")
+	return rawGetRecord(ctx, client, uri.Authority(), uri.Collection(), *uri.RecordKey(), "")
 }

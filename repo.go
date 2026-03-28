@@ -25,29 +25,31 @@ var repoNSID = atproto.NewNSIDBuilder("com.atproto.repo")
 func GetRecord[T Record, A atproto.Authority](
 	ctx context.Context,
 	client Client,
-	pds string,
 	authority A,
 	rkey atproto.RecordKey,
 	cid string,
 ) (RecordStored[T], error) {
 	var v RecordStored[T]
-	u, err := rawGetRecord(ctx, client, pds, authority, v.Value.Type(), rkey, cid)
+	u, err := rawGetRecord(ctx, client, authority, v.Value.Type(), rkey, cid)
 	if err != nil {
 		return v, err
 	}
-	err = json.Unmarshal(u.content, &v)
+	err = json.Unmarshal(u.Raw, &v)
 	return v, err
 }
 
 func rawGetRecord[A atproto.Authority](
 	ctx context.Context,
 	client Client,
-	pds string,
 	authority A,
 	col *atproto.NSID,
 	rkey atproto.RecordKey,
 	cid string,
 ) (*Union, error) {
+	pds, err := authority.PDS(ctx, client.Directory())
+	if err != nil {
+		return nil, err
+	}
 	params := make(url.Values)
 	params.Add("repo", authority.String())
 	params.Add("collection", col.String())
@@ -75,13 +77,16 @@ type listOut[T Record] struct {
 func ListRecords[T Record, A atproto.Authority](
 	ctx context.Context,
 	client Client,
-	pds string,
 	authority A,
 	limit uint8,
 	cursor string,
 	reverse bool,
 ) ([]RecordStored[T], string, error) {
 	var v T
+	pds, err := authority.PDS(ctx, client.Directory())
+	if err != nil {
+		return nil, "", err
+	}
 	params := make(url.Values)
 	params.Add("repo", authority.String())
 	params.Add("collection", v.Type().String())

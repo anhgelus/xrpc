@@ -99,10 +99,16 @@ func (r *RawURI) UnmarshalJSON(b []byte) error {
 //
 // See [ParseURI] to parse an [URI] from a string.
 // See [RawURI] if the [Authority] is unknown, like in JSON.
-type URI[T Authority] struct {
-	authority  T
+// See [NewURI] to create a new [URI].
+type URI[A Authority] struct {
+	authority  A
 	collection *NSID
 	recordKey  *RecordKey
+}
+
+// NewURI creates a new [URI].
+func NewURI[A Authority](authority A, collection *NSID, rkey RecordKey) URI[A] {
+	return URI[A]{authority, collection, &rkey}
 }
 
 // ParseURI in the raw given string.

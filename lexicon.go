@@ -17,8 +17,8 @@ type Record interface {
 //
 // See [UnionAs] to convert an [Union] into a [Record].
 type Union struct {
-	tpe     *atproto.NSID
-	content []byte
+	tpe *atproto.NSID
+	Raw []byte
 }
 
 func (u *Union) Type() *atproto.NSID {
@@ -34,7 +34,7 @@ func (u *Union) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	u.tpe = v.Type
-	u.content = b
+	u.Raw = b
 	return nil
 }
 
@@ -45,6 +45,6 @@ func (u *Union) As(rec Record) bool {
 	if rec.Type() != u.Type() {
 		return false
 	}
-	err := json.Unmarshal(u.content, rec)
+	err := json.Unmarshal(u.Raw, rec)
 	return err == nil
 }
