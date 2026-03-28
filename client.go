@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"tangled.org/anhgelus.world/xrpc/atproto"
 )
 
 const (
@@ -27,22 +29,37 @@ type Client interface {
 	Query(context.Context, RequestBuilder) ([]byte, error)
 	// Procedure performs an XRPC [Procedure].
 	//
-	// body is the body of the request.
-	//
 	// Returns [ErrRequest] if the response code indicates an error >= 400.
 	Procedure(context.Context, RequestBuilder, BodyRequest) ([]byte, error)
+	// FetchRawURI returns the [Record] pointed by the [atproto.RawURI].
+	//
+	// Returns [ErrIncompleteURI] if the [atproto.RawURI] doesn't contain enough information to get [Record].
+	FetchRawURI(ctx context.Context, uri atproto.RawURI) (*Union, error)
 	// NewRequest returns the base [RequestBuilder] used.
 	NewRequest() RequestBuilder
+	// HTTP returns the [http.Client] used by the [Client].
+	HTTP() *http.Client
+	// Directory returns the [atproto.Directory] used by the [Client].
+	Directory() *atproto.Directory
 }
 
 // BaseClient is a simple ATProto XRPC client.
 type BaseClient struct {
 	client *http.Client
+	dir    *atproto.Directory
 }
 
 // NewClient creates a new [BaseClient].
-func NewClient(client *http.Client) *BaseClient {
-	return &BaseClient{client}
+func NewClient(client *http.Client, dir *atproto.Directory) *BaseClient {
+	return &BaseClient{client, dir}
+}
+
+func (c *BaseClient) HTTP() *http.Client {
+	return c.client
+}
+
+func (c *BaseClient) Directory() *atproto.Directory {
+	return c.dir
 }
 
 func (c *BaseClient) Query(ctx context.Context, rb RequestBuilder) ([]byte, error) {

@@ -31,9 +31,26 @@ func GetRecord[T Record, A atproto.Authority](
 	cid string,
 ) (RecordStored[T], error) {
 	var v RecordStored[T]
+	u, err := rawGetRecord(ctx, client, pds, authority, v.Value.Type(), rkey, cid)
+	if err != nil {
+		return v, err
+	}
+	err = json.Unmarshal(u.content, &v)
+	return v, err
+}
+
+func rawGetRecord[A atproto.Authority](
+	ctx context.Context,
+	client Client,
+	pds string,
+	authority A,
+	col *atproto.NSID,
+	rkey atproto.RecordKey,
+	cid string,
+) (*Union, error) {
 	params := make(url.Values)
 	params.Add("repo", authority.String())
-	params.Add("collection", v.Value.Type().String())
+	params.Add("collection", col.String())
 	params.Add("rkey", rkey.String())
 	if cid != "" {
 		params.Add("cid", cid)
@@ -43,11 +60,7 @@ func GetRecord[T Record, A atproto.Authority](
 		Endpoint(repoNSID.Finish("getRecord")).
 		Params(params)
 	b, err := client.Query(ctx, req)
-	if err != nil {
-		return v, err
-	}
-	err = json.Unmarshal(b, &v)
-	return v, err
+	return &Union{col, b}, err
 }
 
 type listOut[T Record] struct {
