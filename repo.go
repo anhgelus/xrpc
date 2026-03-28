@@ -39,7 +39,7 @@ func GetRecord[T Record, A atproto.Authority](
 		params.Add("cid", cid)
 	}
 	req := client.NewRequest().
-		PDS(pds).
+		Server(pds).
 		Endpoint(repoNSID.Finish("getRecord")).
 		Params(params)
 	b, err := client.Query(ctx, req)
@@ -81,7 +81,7 @@ func ListRecords[T Record, A atproto.Authority](
 	}
 	params.Add("reverse", fmt.Sprintf("%t", reverse))
 	req := client.NewRequest().
-		PDS(pds).
+		Server(pds).
 		Endpoint(repoNSID.Finish("listRecords")).
 		Params(params)
 	b, err := client.Query(ctx, req)

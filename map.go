@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// MarshalerMap implements a custom [MarshalToMap].
-type MarshalerMap interface {
+// MapMarshaler is called by [MarshalToMap] when marshaling the type.
+type MapMarshaler interface {
 	MarshalMap() (any, error)
 }
 
@@ -41,10 +41,9 @@ var (
 )
 
 // MarshalToMap transforms a struct into a map.
-//
 // If v is not a struct, it returns its value.
 //
-// Implements [MarshalerMap] to have a custom behavior.
+// Implements [MapMarshaler] to have a custom behavior.
 //
 // It supports the json tag:
 //
@@ -63,7 +62,7 @@ var (
 // to the field.
 func MarshalToMap(v any) (any, error) {
 	// if custom
-	if conv, ok := v.(MarshalerMap); ok && v != nil {
+	if conv, ok := v.(MapMarshaler); ok && v != nil {
 		return conv.MarshalMap()
 	}
 	// if not a struct

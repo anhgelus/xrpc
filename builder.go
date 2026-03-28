@@ -12,13 +12,13 @@ import (
 //
 // Always use [Client.NewRequest] to get the default [RequestBuilder] of the [Client].
 type RequestBuilder struct {
-	pds      string
+	server   string
 	endpoint *atproto.NSID
 	params   url.Values
 }
 
-func (rb RequestBuilder) PDS(pds string) RequestBuilder {
-	pds = strings.TrimSuffix(pds, "/")
+func (rb RequestBuilder) Server(server string) RequestBuilder {
+	server = strings.TrimSuffix(server, "/")
 	return rb
 }
 
@@ -36,7 +36,7 @@ func (rb RequestBuilder) Params(params url.Values) RequestBuilder {
 //
 // Panics if pds or endpoint is not set.
 func (rb RequestBuilder) Build() string {
-	if rb.pds == "" {
+	if rb.server == "" {
 		panic("cannot finish: PDS is not set")
 	}
 	if rb.endpoint == nil {
@@ -47,7 +47,7 @@ func (rb RequestBuilder) Build() string {
 
 func (rb RequestBuilder) String() string {
 	var sb strings.Builder
-	sb.WriteString(rb.pds)
+	sb.WriteString(rb.server)
 	sb.WriteRune('/')
 	sb.WriteString(BaseURL)
 	if rb.endpoint != nil {

@@ -38,10 +38,10 @@ func (u *Union) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// UnionAs converts an [Union] into a [Record].
+// As converts an [Union] into a [Record].
 //
 // Returns false if it cannot convert.
-func UnionAs[T Record](u *Union, rec T) bool {
+func (u *Union) As(rec Record) bool {
 	if rec.Type() != u.Type() {
 		return false
 	}

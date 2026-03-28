@@ -104,11 +104,14 @@ type NSIDBuilder struct {
 // NewNSIDBuilder creates a new [NSIDBuilder].
 func NewNSIDBuilder(base string) NSIDBuilder {
 	if len(base) > NSIDMaxLength {
-		panic("invalid base: " + base)
+		panic("invalid base: too long, " + base)
+	}
+	if !strings.ContainsRune(base, '.') {
+		panic("invalid base part: must contains at least one dot, " + base)
 	}
 	for s := range strings.SplitSeq(base, ".") {
 		if !regexpNSIDSegment.MatchString(s) {
-			panic("invalid base part: " + s)
+			panic("invalid base part: doesn't match, " + s)
 		}
 	}
 	return NSIDBuilder{strings.ToLower(base)}
@@ -119,12 +122,12 @@ func NewNSIDBuilder(base string) NSIDBuilder {
 func (b NSIDBuilder) Add(authority string) NSIDBuilder {
 	for s := range strings.SplitSeq(authority, ".") {
 		if !regexpNSIDSegment.MatchString(s) {
-			panic("invalid authority part: " + s)
+			panic("invalid authority part: doesn't match, " + s)
 		}
 	}
 	b.authority += "." + strings.ToLower(authority)
 	if len(b.authority) > NSIDMaxLength {
-		panic("invalid authority: " + b.authority)
+		panic("invalid authority: too long, " + b.authority)
 	}
 	return b
 }
@@ -132,13 +135,13 @@ func (b NSIDBuilder) Add(authority string) NSIDBuilder {
 // Finish constructing an [NSID] by setting the [NSID.Name].
 func (b NSIDBuilder) Finish(name string) *NSID {
 	if len(name) > 63 {
-		panic("invalid name: " + name)
+		panic("invalid name: too long, " + name)
 	}
 	if len(b.authority) == 0 {
 		panic("authority not set")
 	}
 	if !regexpNSIDName.MatchString(name) {
-		panic("invalid name: " + name)
+		panic("invalid name: doesn't match, " + name)
 	}
 	return &NSID{b.authority, name}
 }
