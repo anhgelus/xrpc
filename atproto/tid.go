@@ -105,6 +105,10 @@ func (t TID) MarshalJSON() ([]byte, error) {
 	return []byte(t.String()), nil
 }
 
+func (t TID) MarshalMap() (any, error) {
+	return t.String(), nil
+}
+
 func (t *TID) UnmarshalJSON(b []byte) error {
 	var s string
 	err := json.Unmarshal(b, &s)

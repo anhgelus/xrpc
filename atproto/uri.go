@@ -21,7 +21,7 @@ var ErrInvalidURI = errors.New("invalid AT URI")
 // Use [RawURI.IsDID] and [RawURI.IsHandle] to determine the type.
 // Use [RawURI.DID] and [RawURI.Handle] to get the [URI].
 //
-// See [ParseRawURI] to parse a [RawURI] from a string. 
+// See [ParseRawURI] to parse a [RawURI] from a string.
 type RawURI struct {
 	raw  string
 	kind any

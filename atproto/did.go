@@ -124,6 +124,10 @@ func (d *DID) Document(ctx context.Context, client *http.Client) (*DIDDocument, 
 	}
 }
 
+func (d *DID) MarshalMap() (any, error) {
+	return d.String(), nil
+}
+
 func (d *DID) MarshalJSON() ([]byte, error) {
 	return []byte(d.String()), nil
 }

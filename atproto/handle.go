@@ -86,6 +86,10 @@ func (h Handle) MarshalJSON() ([]byte, error) {
 	return []byte(h.String()), nil
 }
 
+func (h Handle) MarshalMap() (any, error) {
+	return h.String(), nil
+}
+
 // Directory is used to get [DID] from [Handle].
 //
 // Can be used concurrently by multiple goroutines.

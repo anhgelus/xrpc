@@ -38,6 +38,10 @@ func (n *NSID) MarshalJSON() ([]byte, error) {
 	return []byte(n.String()), nil
 }
 
+func (n *NSID) MarshalMap() (any, error) {
+	return n.String(), nil
+}
+
 var (
 	ErrInvalidNSID = errors.New("invalid NSID")
 )

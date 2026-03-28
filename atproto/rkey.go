@@ -42,6 +42,10 @@ func (r RecordKey) MarshalJSON() ([]byte, error) {
 	return []byte(r.String()), nil
 }
 
+func (r RecordKey) MarshalMap() (any, error) {
+	return r.String(), nil
+}
+
 func (r *RecordKey) UnmarshalJSON(b []byte) error {
 	var s string
 	err := json.Unmarshal(b, &s)
