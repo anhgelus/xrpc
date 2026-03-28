@@ -97,7 +97,7 @@ func TestDid_Document(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		doc, err := did.Document(context.Background(), http.DefaultClient)
+		doc, err := did.document(context.Background(), http.DefaultClient)
 		if err != nil {
 			t.Fatal(err)
 		}
