@@ -2,6 +2,8 @@
 
 Go library implementing a lightweight [XRPC client for the AT Protocol](https://atproto.com/specs/xrpc).
 
+Main repository is hosted on [Tangled](https://tangled.org/anhgelus.world/xrpc/), an ATProto forge.
+
 ## Why?
 
 The official Bluesky library ([Indigo](https://github.com/bluesky-social/indigo/)) is heavy and use a ton of
