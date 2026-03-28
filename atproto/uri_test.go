@@ -1,7 +1,12 @@
 package atproto
 
 import (
+	"context"
+	"net"
+	"net/http"
+	"strings"
 	"testing"
+	"time"
 
 	"pgregory.net/rapid"
 )
@@ -19,77 +24,70 @@ var (
 	}
 )
 
-func genURIHandle(t *rapid.T, label string) (URI[Handle], string) {
+func genURIHandle(t *rapid.T, label string) (RawURI, string) {
 	domain, _ := genDomain(t, false, label+" handle")
-	uri := Handle(domain.Authority).URI()
+	var sb strings.Builder
+	sb.WriteString("at://")
+	sb.WriteString(domain.Authority)
+	var r RawURI
 	if !rapid.Bool().Draw(t, label+" collection?") {
-		return uri, uri.String()
+		return r, sb.String()
 	}
-	return genURI(t, label, uri)
+	sb.WriteRune('/')
+	domain, _ = genDomain(t, true, label+" collection")
+	sb.WriteString(domain.String())
+	if !rapid.Bool().Draw(t, label+" rkey?") {
+		return r, sb.String()
+	}
+	sb.WriteRune('/')
+	raw := genRecordKey().Draw(t, label+" rkey")
+	sb.WriteString(raw)
+	return r, sb.String()
 }
 
-func genURIDID(t *rapid.T, label string) (URI[*DID], string) {
+func genURI(t *rapid.T, label string) (URI, string) {
 	raw := genDid(t, label+" did")
 	did, _ := ParseDID(raw)
 	uri := did.URI()
 	if !rapid.Bool().Draw(t, label+" collection?") {
 		return uri, uri.String()
 	}
-	return genURI(t, label, uri)
-}
-
-func genURI[T Authority](t *rapid.T, label string, uri URI[T]) (URI[T], string) {
 	domain, _ := genDomain(t, true, label+" collection")
 	uri.collection = domain
 	if !rapid.Bool().Draw(t, label+" rkey?") {
 		return uri, uri.String()
 	}
-	raw := genRecordKey().Draw(t, label+" rkey")
+	raw = genRecordKey().Draw(t, label+" rkey")
 	rkey := RecordKey(raw)
 	uri.recordKey = &rkey
 	return uri, uri.String()
 }
 
+var dir = NewDirectory(http.DefaultClient, net.DefaultResolver, 5*time.Minute)
+
 func TestParseRawURI(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		u, s := genURIHandle(t, "uri")
+		_, s := genURIHandle(t, "uri")
 		t.Log(s)
 		raw, err := ParseRawURI(s)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !raw.IsHandle() {
-			t.Fatal("expected handle")
-		}
-		uri, err := raw.Handle()
-		if err != nil {
-			t.Fatal(err)
-		}
-		if uri.authority != u.authority {
-			t.Errorf("invalid authority: %s, wanted %s", uri.authority, u.authority)
-		}
-		if u.collection != nil {
-			if *uri.collection != *u.collection {
-				t.Errorf("invalid collection: %s, wanted %s", uri.collection, u.collection)
-			}
-		}
-		if u.recordKey != nil {
-			if *uri.recordKey != *u.recordKey {
-				t.Errorf("invalid rkey: %s, wanted %s", *uri.recordKey, *u.recordKey)
+		if !testing.Short() {
+			_, err = raw.URI(context.Background(), dir)
+			if err != nil {
+				t.Fatal(err)
 			}
 		}
 	})
 	rapid.Check(t, func(t *rapid.T) {
-		u, s := genURIDID(t, "uri")
+		u, s := genURI(t, "uri")
 		t.Log(s)
 		raw, err := ParseRawURI(s)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !raw.IsDID() {
-			t.Fatal("expected DID")
-		}
-		uri, err := raw.DID()
+		uri, err := raw.URI(context.Background(), dir)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -110,16 +108,9 @@ func TestParseRawURI(t *testing.T) {
 	fn := func(u string) {
 		uri, err := ParseRawURI(u)
 		if err == nil {
-			if uri.IsDID() {
-				_, err = uri.DID()
-				if err == nil {
-					t.Errorf("expected error for %s", u)
-				}
-			} else if uri.IsHandle() {
-				_, err = uri.Handle()
-				if err == nil {
-					t.Errorf("expected error for %s", u)
-				}
+			_, err = uri.URI(context.Background(), dir)
+			if err == nil {
+				t.Errorf("expected error for %s", u)
 			}
 		}
 	}

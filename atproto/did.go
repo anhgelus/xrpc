@@ -69,8 +69,8 @@ func (d *DID) PDS(ctx context.Context, dir *Directory) (string, error) {
 	return pds, nil
 }
 
-func (d *DID) URI() URI[*DID] {
-	return URI[*DID]{authority: d}
+func (d *DID) URI() URI {
+	return URI{authority: d}
 }
 
 func (d *DID) document(ctx context.Context, client *http.Client) (*DIDDocument, error) {

@@ -4,31 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 )
 
 var ErrCannotFindPDS = errors.New("cannot find PDS")
-
-// Authority is used to identify a user.
-// It can be a [DID] or an [Handle].
-type Authority interface {
-	Handle | *DID
-	fmt.Stringer
-	PDS(context.Context, *Directory) (string, error)
-}
 
 var ErrInvalidURI = errors.New("invalid AT URI")
 
 // RawURI is an [URI] where its [Authority] is not determined.
 //
 // Use [RawURI.IsDID] and [RawURI.IsHandle] to determine the type.
-// Use [RawURI.DID] and [RawURI.Handle] to get the [URI].
+// Use [RawURI.URI] and [RawURI.Handle] to get the [URI].
 //
 // See [ParseRawURI] to parse a [RawURI] from a string.
 type RawURI struct {
-	raw  string
-	kind any
+	raw string
 }
 
 // ParseRawURI in the raw given string.
@@ -42,47 +32,15 @@ func ParseRawURI(raw string) (uri RawURI, err error) {
 		err = ErrInvalidURI
 		return
 	}
-	if strings.HasPrefix(raw, "did:") {
-		uri.kind = &DID{}
-	} else {
-		uri.kind = Handle("")
-	}
 	return
 }
 
-func (r RawURI) IsHandle() bool {
-	_, ok := r.kind.(Handle)
-	return ok
-}
-
-func (r RawURI) IsDID() bool {
-	_, ok := r.kind.(*DID)
-	return ok
-}
-
-func (r RawURI) Handle() (URI[Handle], error) {
-	return ParseURI[Handle](r.raw)
-}
-
-func (r RawURI) DID() (URI[*DID], error) {
-	return ParseURI[*DID](r.raw)
+func (r RawURI) URI(ctx context.Context, dir *Directory) (URI, error) {
+	return ParseURI(ctx, dir, r.raw)
 }
 
 func (r RawURI) MarshalJSON() ([]byte, error) {
-	if r.IsDID() {
-		did, err := r.DID()
-		if err != nil {
-			return nil, err
-		}
-		return []byte(did.String()), nil
-	} else if r.IsHandle() {
-		h, err := r.Handle()
-		if err != nil {
-			return nil, err
-		}
-		return []byte(h.String()), nil
-	}
-	panic("unsupported authority")
+	return []byte(r.raw), nil
 }
 
 func (r *RawURI) UnmarshalJSON(b []byte) error {
@@ -100,51 +58,52 @@ func (r *RawURI) UnmarshalJSON(b []byte) error {
 // See [ParseURI] to parse an [URI] from a string.
 // See [RawURI] if the [Authority] is unknown, like in JSON.
 // See [NewURI] to create a new [URI].
-type URI[A Authority] struct {
-	authority  A
+type URI struct {
+	authority  *DID
 	collection *NSID
 	recordKey  *RecordKey
 }
 
 // NewURI creates a new [URI].
-func NewURI[A Authority](authority A, collection *NSID, rkey RecordKey) URI[A] {
-	return URI[A]{authority, collection, &rkey}
+func NewURI(authority *DID, collection *NSID, rkey RecordKey) URI {
+	return URI{authority, collection, &rkey}
 }
 
 // ParseURI in the raw given string.
 //
 // Returns [ErrInvalidURI] if the [URI] is invalid.
 // Returns [ErrCannotParseURIAs] if the [URI] is not compatible with the provided kind.
-func ParseURI[T Authority](raw string) (uri URI[T], err error) {
+func ParseURI(ctx context.Context, dir *Directory, raw string) (uri URI, err error) {
 	// parsing authority
 	b, raw, ok := strings.Cut(raw, "at://")
 	if !ok || b != "" {
 		err = ErrInvalidURI
 		return
 	}
-	var t any = uri.authority
 	authority, next, ok := strings.Cut(raw, "/")
 	if ok && next == "" {
 		err = ErrInvalidURI
 		return
 	}
-	switch t.(type) {
-	case *DID:
-		t, err = ParseDID(authority)
-	case Handle:
-		t, err = ParseHandle(authority)
-	default:
-		panic("unsupported authority")
-	}
-	if err != nil {
-		err = fmt.Errorf("%w: %w", ErrCannotParseURIAs{uri}, err)
-		return
-	}
-	uri.authority, ok = t.(T)
-	if !ok {
-		err = ErrCannotParseURIAs{uri}
-		return
-	}
+	defer func() {
+		if err != nil {
+			return
+		}
+		uri.authority, err = ParseDID(authority)
+		if !strings.HasPrefix(authority, "did:") && err != nil {
+			var h Handle
+			h, err = ParseHandle(authority)
+			if err != nil {
+				return
+			}
+			var doc *DIDDocument
+			doc, err = dir.ResolveHandle(ctx, h)
+			if err != nil {
+				return
+			}
+			uri.authority = doc.DID
+		}
+	}()
 	if next == "" {
 		return
 	}
@@ -168,7 +127,7 @@ func ParseURI[T Authority](raw string) (uri URI[T], err error) {
 	return
 }
 
-func (u URI[T]) String() string {
+func (u URI) String() string {
 	var sb strings.Builder
 	sb.WriteString("at://")
 	sb.WriteString(u.Authority().String())
@@ -183,32 +142,24 @@ func (u URI[T]) String() string {
 	return sb.String()
 }
 
-func (u URI[T]) Authority() T {
+func (u URI) Authority() *DID {
 	return u.authority
 }
 
-func (u URI[T]) Collection() *NSID {
+func (u URI) Collection() *NSID {
 	return u.collection
 }
 
-func (u URI[T]) SetCollection(collection *NSID) URI[T] {
+func (u URI) SetCollection(collection *NSID) URI {
 	u.collection = collection
 	return u
 }
 
-func (u URI[T]) RecordKey() *RecordKey {
+func (u URI) RecordKey() *RecordKey {
 	return u.recordKey
 }
 
-func (u URI[T]) SetRecordKey(rkey RecordKey) URI[T] {
+func (u URI) SetRecordKey(rkey RecordKey) URI {
 	u.recordKey = &rkey
 	return u
-}
-
-type ErrCannotParseURIAs struct {
-	target any
-}
-
-func (err ErrCannotParseURIAs) Error() string {
-	return fmt.Sprintf("cannot parse URI as %T", err.target)
 }

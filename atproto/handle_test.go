@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"slices"
 	"testing"
 
 	"pgregory.net/rapid"
@@ -66,7 +65,11 @@ func TestDirectory_ResolveHandle(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !slices.Contains(doc.AlsoKnownAs, h.URI().String()) {
+		hh, ok := doc.Handle()
+		if !ok {
+			t.Fatal("impossible to get handle of", h)
+		}
+		if hh != h {
 			t.Errorf("invalid also known as: %v, must contains %s", doc.AlsoKnownAs, "at://"+h.String())
 		}
 		t.Logf("%s's did: %s", h, doc.DID)

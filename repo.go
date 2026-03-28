@@ -22,15 +22,15 @@ var repoNSID = atproto.NewNSIDBuilder("com.atproto.repo")
 // GetRecord returns a single [Record] from a repository.
 //
 // If cid is omitted, it will return the latest version of the [Record].
-func GetRecord[T Record, A atproto.Authority](
+func GetRecord[T Record](
 	ctx context.Context,
 	client Client,
-	authority A,
+	did *atproto.DID,
 	rkey atproto.RecordKey,
 	cid string,
 ) (RecordStored[T], error) {
 	var v RecordStored[T]
-	u, err := rawGetRecord(ctx, client, authority, v.Value.Type(), rkey, cid)
+	u, err := rawGetRecord(ctx, client, did, v.Value.Type(), rkey, cid)
 	if err != nil {
 		return v, err
 	}
@@ -38,20 +38,20 @@ func GetRecord[T Record, A atproto.Authority](
 	return v, err
 }
 
-func rawGetRecord[A atproto.Authority](
+func rawGetRecord(
 	ctx context.Context,
 	client Client,
-	authority A,
+	did *atproto.DID,
 	col *atproto.NSID,
 	rkey atproto.RecordKey,
 	cid string,
 ) (*Union, error) {
-	pds, err := authority.PDS(ctx, client.Directory())
+	pds, err := did.PDS(ctx, client.Directory())
 	if err != nil {
 		return nil, err
 	}
 	params := make(url.Values)
-	params.Add("repo", authority.String())
+	params.Add("repo", did.String())
 	params.Add("collection", col.String())
 	params.Add("rkey", rkey.String())
 	if cid != "" {
@@ -74,21 +74,21 @@ type listOut[T Record] struct {
 //
 // limit is optional (default: 50, max: 100), set to -1 to use default.
 // cursor is optional.
-func ListRecords[T Record, A atproto.Authority](
+func ListRecords[T Record](
 	ctx context.Context,
 	client Client,
-	authority A,
+	did *atproto.DID,
 	limit uint8,
 	cursor string,
 	reverse bool,
 ) ([]RecordStored[T], string, error) {
 	var v T
-	pds, err := authority.PDS(ctx, client.Directory())
+	pds, err := did.PDS(ctx, client.Directory())
 	if err != nil {
 		return nil, "", err
 	}
 	params := make(url.Values)
-	params.Add("repo", authority.String())
+	params.Add("repo", did.String())
 	params.Add("collection", v.Type().String())
 	if limit == 0 {
 		limit = 50

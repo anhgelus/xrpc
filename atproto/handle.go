@@ -79,10 +79,6 @@ func (h Handle) PDS(ctx context.Context, dir *Directory) (string, error) {
 	return pds, nil
 }
 
-func (h Handle) URI() URI[Handle] {
-	return URI[Handle]{authority: h}
-}
-
 func (h *Handle) UnmarshalJSON(b []byte) error {
 	var s string
 	err := json.Unmarshal(b, &s)
@@ -127,14 +123,14 @@ func NewDirectory(client *http.Client, resolver *net.Resolver, cachedFor time.Du
 	}
 }
 
-func setCache[A Authority](d *Directory, doc *DIDDocument, authority A) {
+func setCache(d *Directory, doc *DIDDocument, authority fmt.Stringer) {
 	d.mu.RUnlock()
 	d.mu.Lock()
 	d.cache[authority.String()] = doc
-	go func(authority A) {
+	go func(k string) {
 		time.Sleep(d.cachedFor * time.Minute)
-		delete(d.cache, authority.String())
-	}(authority)
+		delete(d.cache, k)
+	}(authority.String())
 	d.mu.Unlock()
 	d.mu.RLock()
 }
