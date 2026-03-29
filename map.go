@@ -73,7 +73,11 @@ func MarshalToMap(v any) (any, error) {
 		if ref.IsNil() {
 			return nil, nil
 		}
-		return MarshalToMap(ref.Elem().Interface())
+		elem := ref.Elem()
+		if !elem.CanInterface() {
+			return nil, nil
+		}
+		return MarshalToMap(elem.Interface())
 	default:
 		return v, nil
 	}
@@ -84,6 +88,9 @@ func MarshalToMap(v any) (any, error) {
 	for i := range fields {
 		field := ref.Field(i)
 		fieldType := refType.Field(i)
+		if !field.CanInterface() {
+			continue
+		}
 		val, err := MarshalToMap(field.Interface())
 		if err != nil {
 			return nil, err
