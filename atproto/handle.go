@@ -144,6 +144,7 @@ func setCache(d *Directory, doc *DIDDocument, authority fmt.Stringer) {
 func (d *Directory) ResolveDID(ctx context.Context, did *DID) (*DIDDocument, error) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
+
 	if doc, ok := d.cache[did.String()]; ok {
 		return doc, nil
 	}

@@ -18,7 +18,7 @@ type RequestBuilder struct {
 }
 
 func (rb RequestBuilder) Server(server string) RequestBuilder {
-	server = strings.TrimSuffix(server, "/")
+	rb.server = strings.TrimSuffix(server, "/")
 	return rb
 }
 
@@ -37,7 +37,7 @@ func (rb RequestBuilder) Params(params url.Values) RequestBuilder {
 // Panics if pds or endpoint is not set.
 func (rb RequestBuilder) Build() string {
 	if rb.server == "" {
-		panic("cannot finish: PDS is not set")
+		panic("cannot finish: server (PDS or relay) is not set")
 	}
 	if rb.endpoint == nil {
 		panic("cannot finish: endpoint is not set")
