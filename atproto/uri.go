@@ -35,12 +35,20 @@ func ParseRawURI(raw string) (uri RawURI, err error) {
 	return
 }
 
+func (r RawURI) String() string {
+	return r.raw
+}
+
 func (r RawURI) URI(ctx context.Context, dir *Directory) (URI, error) {
 	return ParseURI(ctx, dir, r.raw)
 }
 
 func (r RawURI) MarshalJSON() ([]byte, error) {
-	return []byte(r.raw), nil
+	return json.Marshal(r.String())
+}
+
+func (r RawURI) MarshalMap() (any, error) {
+	return r.String(), nil
 }
 
 func (r *RawURI) UnmarshalJSON(b []byte) error {

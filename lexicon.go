@@ -15,19 +15,41 @@ type Record interface {
 
 // Union represents an ATProto *open* union.
 //
-// See [UnionAs] to convert an [Union] into a [Record].
+// See [Union.As] to convert an [Union] into a [Record].
+// See [AsUnion] to convert a [Record] into an [Union].
 type Union struct {
 	tpe *atproto.NSID
 	Raw []byte
+}
+
+// AsUnion converts a [Record] to an [Union].
+//
+// Returns an error if cannot marshal [Record].
+func AsUnion(rec Record) (*Union, error) {
+	union := &Union{tpe: rec.Type()}
+	t, err := MarshalToMap(rec)
+	if err != nil {
+		return nil, err
+	}
+	union.Raw, err = json.Marshal(t)
+	return union, err
 }
 
 func (u *Union) Type() *atproto.NSID {
 	return u.tpe
 }
 
+func (u *Union) MarshalJSON() ([]byte, error) {
+	return u.Raw, nil
+}
+
+func (u *Union) MarshalMap() (any, error) {
+	return u.Raw, nil
+}
+
 func (u *Union) UnmarshalJSON(b []byte) error {
 	var v struct {
-		Type *atproto.NSID `json:"string"`
+		Type *atproto.NSID `json:"$type"`
 	}
 	err := json.Unmarshal(b, &v)
 	if err != nil {

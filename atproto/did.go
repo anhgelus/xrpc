@@ -137,7 +137,7 @@ func (d *DID) MarshalMap() (any, error) {
 }
 
 func (d *DID) MarshalJSON() ([]byte, error) {
-	return []byte(d.String()), nil
+	return json.Marshal(d.String())
 }
 
 func (d *DID) UnmarshalJSON(b []byte) error {

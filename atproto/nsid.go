@@ -47,7 +47,7 @@ func (n *NSID) UnmarshalJSON(b []byte) error {
 }
 
 func (n *NSID) MarshalJSON() ([]byte, error) {
-	return []byte(n.String()), nil
+	return json.Marshal(n.String())
 }
 
 func (n *NSID) MarshalMap() (any, error) {

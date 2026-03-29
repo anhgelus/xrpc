@@ -90,7 +90,7 @@ func (h *Handle) UnmarshalJSON(b []byte) error {
 }
 
 func (h Handle) MarshalJSON() ([]byte, error) {
-	return []byte(h.String()), nil
+	return json.Marshal(h.String())
 }
 
 func (h Handle) MarshalMap() (any, error) {

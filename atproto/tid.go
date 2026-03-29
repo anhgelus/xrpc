@@ -102,7 +102,7 @@ func (t TID) ClockID() uint {
 }
 
 func (t TID) MarshalJSON() ([]byte, error) {
-	return []byte(t.String()), nil
+	return json.Marshal(t.String())
 }
 
 func (t TID) MarshalMap() (any, error) {

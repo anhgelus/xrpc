@@ -39,7 +39,7 @@ func (r RecordKey) NSID() (*NSID, error) {
 }
 
 func (r RecordKey) MarshalJSON() ([]byte, error) {
-	return []byte(r.String()), nil
+	return json.Marshal(r.String())
 }
 
 func (r RecordKey) MarshalMap() (any, error) {
