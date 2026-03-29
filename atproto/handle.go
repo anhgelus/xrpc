@@ -124,15 +124,17 @@ func NewDirectory(client *http.Client, resolver *net.Resolver, cachedFor time.Du
 }
 
 func setCache(d *Directory, doc *DIDDocument, authority fmt.Stringer) {
-	d.mu.RUnlock()
 	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	d.cache[authority.String()] = doc
 	go func(k string) {
 		time.Sleep(d.cachedFor * time.Minute)
+
+		d.mu.Lock()
 		delete(d.cache, k)
+		d.mu.Unlock()
 	}(authority.String())
-	d.mu.Unlock()
-	d.mu.RLock()
 }
 
 // ResolveDID returns the [DIDDocument] associated with.
@@ -149,7 +151,9 @@ func (d *Directory) ResolveDID(ctx context.Context, did *DID) (*DIDDocument, err
 	if err != nil {
 		return nil, err
 	}
+	d.mu.RUnlock()
 	setCache(d, doc, did)
+	d.mu.RLock()
 	return doc, nil
 }
 
@@ -176,7 +180,9 @@ func (d *Directory) ResolveHandle(ctx context.Context, h Handle) (*DIDDocument, 
 	if !ok || res != h {
 		return nil, ErrInvalidHandle
 	}
+	d.mu.RUnlock()
 	setCache(d, doc, h)
+	d.mu.RLock()
 	return doc, nil
 }
 
