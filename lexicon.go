@@ -64,7 +64,7 @@ func (u *Union) UnmarshalJSON(b []byte) error {
 //
 // Returns false if it cannot convert.
 func (u *Union) As(rec Record) bool {
-	if rec.Type() != u.Type() {
+	if !u.Type().Is(rec.Type()) {
 		return false
 	}
 	err := json.Unmarshal(u.Raw, rec)

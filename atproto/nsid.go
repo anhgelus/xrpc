@@ -17,6 +17,11 @@ type NSID struct {
 	Fragment  string
 }
 
+// Is returns true if [NSID]s represents the same.
+func (n *NSID) Is(nsid *NSID) bool {
+	return n.Authority == nsid.Authority && n.Name == nsid.Name && n.Fragment == nsid.Fragment
+}
+
 func (n *NSID) String() string {
 	var sb strings.Builder
 	sb.Grow(len(n.Authority) + len(n.Name) + len(n.Fragment) + 2)
