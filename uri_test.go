@@ -40,8 +40,8 @@ func TestClient_FetchURI(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !union.Type().Is(uri.Collection()) {
-			t.Errorf("invalid type: %s, wanted %s", union.Type(), uri.Collection())
+		if !union.Value.Type().Is(uri.Collection()) {
+			t.Errorf("invalid type: %s, wanted %s", union.Value.Type(), uri.Collection())
 		}
 	}
 }

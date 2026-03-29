@@ -34,7 +34,7 @@ type Client interface {
 	// FetchRawURI returns the [Record] pointed by the [atproto.RawURI].
 	//
 	// Returns [ErrIncompleteURI] if the [atproto.RawURI] doesn't contain enough information to get [Record].
-	FetchURI(ctx context.Context, uri atproto.URI) (*Union, error)
+	FetchURI(ctx context.Context, uri atproto.URI) (RecordStored[*Union], error)
 	// NewRequest returns the base [RequestBuilder] used.
 	NewRequest() RequestBuilder
 	// HTTP returns the [http.Client] used by the [Client].

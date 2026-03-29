@@ -2,6 +2,7 @@ package xrpc
 
 import (
 	"encoding/json"
+	"errors"
 
 	"tangled.org/anhgelus.world/xrpc/atproto"
 )
@@ -12,6 +13,8 @@ type Record interface {
 	// Must be stateless.
 	Type() *atproto.NSID
 }
+
+var ErrNotRecord = errors.New("value got is not a record")
 
 // Union represents an ATProto *open* union.
 //
@@ -54,6 +57,9 @@ func (u *Union) UnmarshalJSON(b []byte) error {
 	err := json.Unmarshal(b, &v)
 	if err != nil {
 		return err
+	}
+	if v.Type == nil {
+		return ErrNotRecord
 	}
 	u.tpe = v.Type
 	u.Raw = b

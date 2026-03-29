@@ -34,8 +34,10 @@ func GetRecord[T Record](
 	if err != nil {
 		return v, err
 	}
-	err = json.Unmarshal(u.Raw, &v)
-	return v, err
+	v.CID = u.CID
+	v.URI = u.URI
+	u.Value.As(v.Value)
+	return v, nil
 }
 
 func rawGetRecord(
@@ -45,10 +47,11 @@ func rawGetRecord(
 	col *atproto.NSID,
 	rkey atproto.RecordKey,
 	cid string,
-) (*Union, error) {
+) (RecordStored[*Union], error) {
+	var v RecordStored[*Union]
 	pds, err := did.PDS(ctx, client.Directory())
 	if err != nil {
-		return nil, err
+		return v, err
 	}
 	params := make(url.Values)
 	params.Add("repo", did.String())
@@ -62,7 +65,7 @@ func rawGetRecord(
 		Endpoint(repoNSID.Name("getRecord").Build()).
 		Params(params)
 	b, err := client.Query(ctx, req)
-	return &Union{col, b}, err
+	return v, json.Unmarshal(b, &v)
 }
 
 type listOut[T Record] struct {
