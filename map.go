@@ -5,6 +5,9 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"time"
+
+	"tangled.org/anhgelus.world/xrpc/atproto"
 )
 
 // MapMarshaler is called by [MarshalToMap] when marshaling the type.
@@ -62,8 +65,13 @@ var (
 // to the field.
 func MarshalToMap(v any) (any, error) {
 	// if custom
-	if conv, ok := v.(MapMarshaler); ok && v != nil {
-		return conv.MarshalMap()
+	if v != nil {
+		if conv, ok := v.(MapMarshaler); ok {
+			return conv.MarshalMap()
+		}
+		if conv, ok := v.(time.Time); ok {
+			return conv.Format(atproto.TimeFormat), nil
+		}
 	}
 	// if not a struct
 	ref := reflect.ValueOf(v)

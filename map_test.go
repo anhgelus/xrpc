@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
+
+	"tangled.org/anhgelus.world/xrpc/atproto"
 )
 
 func validMap(t *testing.T, check any, res map[string]any) {
@@ -97,4 +100,18 @@ func TestMarshalToMap_CustomMarshal(t *testing.T) {
 		t.Fatal(err)
 	}
 	validMap(t, v, map[string]any{"a": 5})
+}
+
+type test5 struct {
+	A time.Time `json:"a"`
+}
+
+func TestMarshalToMap_Time(t *testing.T) {
+	now := time.Now()
+	h := test5{now}
+	v, err := MarshalToMap(h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	validMap(t, v, map[string]any{"a": now.Format(atproto.TimeFormat)})
 }

@@ -2,7 +2,6 @@ package atproto
 
 import (
 	"testing"
-	"time"
 
 	"pgregory.net/rapid"
 )
@@ -11,10 +10,6 @@ func genTID(t *rapid.T, label string) TID {
 	beg := rapid.StringOfN(rapid.RuneFrom([]rune("234567abcdefhij")), 1, -1, 1).Draw(t, label+" begin")
 	end := rapid.StringOfN(rapid.RuneFrom([]rune("234567abcdefghijklmnopqrstuvxyz")), 12, -1, 12).Draw(t, label+" end")
 	return TID(beg + end)
-}
-
-func genTime(t *rapid.T, label string) time.Time {
-	return time.UnixMicro(int64(rapid.Uint32().Draw(t, label))).UTC()
 }
 
 var (
