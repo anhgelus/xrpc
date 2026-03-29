@@ -22,6 +22,11 @@ var (
 		"at://computer",
 		"at://example.com:3000",
 	}
+	validURI = []string{
+		"at://anhgelus.world",
+		"at://hailey.at",
+		"at://mewsse.pet",
+	}
 )
 
 func genURIHandle(t *rapid.T, label string) (RawURI, string) {
@@ -69,15 +74,9 @@ func TestParseRawURI(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		_, s := genURIHandle(t, "uri")
 		t.Log(s)
-		raw, err := ParseRawURI(s)
+		_, err := ParseRawURI(s)
 		if err != nil {
 			t.Fatal(err)
-		}
-		if !testing.Short() {
-			_, err = raw.URI(context.Background(), dir)
-			if err != nil {
-				t.Fatal(err)
-			}
 		}
 	})
 	rapid.Check(t, func(t *rapid.T) {
@@ -119,6 +118,18 @@ func TestParseRawURI(t *testing.T) {
 	}
 	for _, u := range invalidURILexicon {
 		fn(u)
+	}
+	for _, u := range validURI {
+		uri, err := ParseRawURI(u)
+		if err != nil {
+			t.Fatal(u, err)
+		}
+		if !testing.Short() {
+			_, err := uri.URI(context.Background(), dir)
+			if err != nil {
+				t.Fatal(u, err)
+			}
+		}
 	}
 }
 
