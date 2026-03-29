@@ -93,10 +93,6 @@ func MarshalToMap(v any) (any, error) {
 			mp[name] = val
 		}
 	}
-	// if struct is a record
-	if rec, ok := v.(Record); ok {
-		mp["$type"] = rec.Type()
-	}
 	return mp, nil
 }
 
