@@ -87,7 +87,7 @@ func TestNSIDBuilder(t *testing.T) {
 		tt1, _ := genDomain(t, true, "base")
 		base := NewNSIDBuilder(tt1.Authority)
 		tt2, _ := genDomain(t, true, "next")
-		baseNext := base.Add(tt2.Authority)
+		baseNext := base.SubAuthority(tt2.Authority)
 		if base.String() == baseNext.String() {
 			t.Errorf("base is baseNext: %s, %s", base.String(), baseNext.String())
 		}
@@ -97,7 +97,7 @@ func TestNSIDBuilder(t *testing.T) {
 		if baseNext.authority != tt1.Authority+"."+tt2.Authority {
 			t.Errorf("invalid authority for baseNext: %s, wanted %s", baseNext.authority, tt1.Authority+"."+tt2.Authority)
 		}
-		baseNsid := base.Finish(tt1.Name)
+		baseNsid := base.Name(tt1.Name).Build()
 		if *baseNsid != *tt1 {
 			t.Errorf("invalid nsid finish: %s, wanted %s", baseNsid, tt1)
 		}

@@ -59,7 +59,7 @@ func rawGetRecord(
 	}
 	req := client.NewRequest().
 		Server(pds).
-		Endpoint(repoNSID.Finish("getRecord")).
+		Endpoint(repoNSID.Name("getRecord").Build()).
 		Params(params)
 	b, err := client.Query(ctx, req)
 	return &Union{col, b}, err
@@ -100,7 +100,7 @@ func ListRecords[T Record](
 	params.Add("reverse", fmt.Sprintf("%t", reverse))
 	req := client.NewRequest().
 		Server(pds).
-		Endpoint(repoNSID.Finish("listRecords")).
+		Endpoint(repoNSID.Name("listRecords").Build()).
 		Params(params)
 	b, err := client.Query(ctx, req)
 	if err != nil {

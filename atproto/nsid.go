@@ -14,10 +14,22 @@ import (
 type NSID struct {
 	Authority string
 	Name      string
+	Fragment  string
 }
 
 func (n *NSID) String() string {
-	return n.Authority + "." + n.Name
+	var sb strings.Builder
+	sb.Grow(len(n.Authority) + len(n.Name) + len(n.Fragment) + 2)
+	if n.Authority != "" {
+		sb.WriteString(n.Authority)
+		sb.WriteRune('.')
+	}
+	sb.WriteString(n.Name)
+	if n.Fragment != "" {
+		sb.WriteRune('#')
+		sb.WriteString(n.Fragment)
+	}
+	return sb.String()
 }
 
 func (n *NSID) UnmarshalJSON(b []byte) error {
@@ -98,7 +110,7 @@ func ParseNSID(raw string) (*NSID, error) {
 // NSIDBuilder helps creating an [NSID].
 // It panics instead of returning an error if an invalid argument is given.
 type NSIDBuilder struct {
-	authority string
+	authority, name, fragment string
 }
 
 // NewNSIDBuilder creates a new [NSIDBuilder].
@@ -114,12 +126,12 @@ func NewNSIDBuilder(base string) NSIDBuilder {
 			panic("invalid base part: doesn't match, " + s)
 		}
 	}
-	return NSIDBuilder{strings.ToLower(base)}
+	return NSIDBuilder{strings.ToLower(base), "", ""}
 }
 
-// Add a segment to [NSID.Authority].
+// SubAuthority adds a sub segment to [NSID.Authority].
 // Must not start or end with a dot ('.').
-func (b NSIDBuilder) Add(authority string) NSIDBuilder {
+func (b NSIDBuilder) SubAuthority(authority string) NSIDBuilder {
 	for s := range strings.SplitSeq(authority, ".") {
 		if !regexpNSIDSegment.MatchString(s) {
 			panic("invalid authority part: doesn't match, " + s)
@@ -132,18 +144,37 @@ func (b NSIDBuilder) Add(authority string) NSIDBuilder {
 	return b
 }
 
-// Finish constructing an [NSID] by setting the [NSID.Name].
-func (b NSIDBuilder) Finish(name string) *NSID {
+// Name sets the [NSID.Name].
+// Must not start with a dot ('.').
+func (b NSIDBuilder) Name(name string) NSIDBuilder {
 	if len(name) > 63 {
 		panic("invalid name: too long, " + name)
-	}
-	if len(b.authority) == 0 {
-		panic("authority not set")
 	}
 	if !regexpNSIDName.MatchString(name) {
 		panic("invalid name: doesn't match, " + name)
 	}
-	return &NSID{b.authority, name}
+	b.name = name
+	return b
+}
+
+// Fragment sets the [NSID.Fragment].
+// Must not start with a #.
+//
+// Does not perform any validation, because the documentations is unclear.
+func (b NSIDBuilder) Fragment(fragment string) NSIDBuilder {
+	b.fragment = fragment
+	return b
+}
+
+// Build the [NSID].
+func (b NSIDBuilder) Build() *NSID {
+	if len(b.name) == 0 {
+		panic("name not set")
+	}
+	if len(b.authority) == 0 {
+		panic("authority not set")
+	}
+	return &NSID{b.authority, b.name, b.fragment}
 }
 
 func (b NSIDBuilder) String() string {
