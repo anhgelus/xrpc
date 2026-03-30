@@ -111,3 +111,33 @@ func ListRecords[T Record](
 	err = json.Unmarshal(b, &out)
 	return out.Records, out.Cursor, err
 }
+
+// RepoDescription is returned by [DescribeRepo].
+type RepoDescription struct {
+	Handle atproto.Handle       `json:"handle"`
+	DID    *atproto.DID         `json:"did"`
+	DIDDoc *atproto.DIDDocument `json:"didDoc"`
+	// Collections for which this repo contains at least one [Record].
+	Collections     []*atproto.NSID `json:"collections"`
+	HandleIsCorrect bool            `json:"handleIsCorrect"`
+}
+
+// DescribeRepo returns information about an account and repository.
+func DescribeRepo(ctx context.Context, client Client, did *atproto.DID) (*RepoDescription, error) {
+	pds, err := did.PDS(ctx, client.Directory())
+	if err != nil {
+		return nil, err
+	}
+	params := make(url.Values)
+	params.Add("repo", did.String())
+	req := client.NewRequest().
+		Server(pds).
+		Endpoint(repoNSID.Name("describeRepo").Build()).
+		Params(params)
+	b, err := client.Query(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	var v RepoDescription
+	return &v, json.Unmarshal(b, &v)
+}

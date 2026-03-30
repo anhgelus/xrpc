@@ -79,6 +79,14 @@ func (h Handle) PDS(ctx context.Context, dir *Directory) (string, error) {
 	return pds, nil
 }
 
+func (h Handle) DID(ctx context.Context, dir *Directory) (*DID, error) {
+	doc, err := dir.ResolveHandle(ctx, h)
+	if err != nil {
+		return nil, err
+	}
+	return doc.DID, nil
+}
+
 func (h *Handle) UnmarshalJSON(b []byte) error {
 	var s string
 	err := json.Unmarshal(b, &s)

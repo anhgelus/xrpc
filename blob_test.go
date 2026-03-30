@@ -15,7 +15,7 @@ func genBlob(t *rapid.T, baseMime, label string) (*Blob, map[string]any) {
 		Size: rapid.UintMin(1).Draw(t, label+"_size"),
 	}
 	return blob, map[string]any{
-		"$type":    blob.Type(),
+		"$type":    blob.Collection(),
 		"ref":      map[string]any{"$link": blob.CID},
 		"mimeType": blob.MimeType,
 		"size":     blob.Size,
