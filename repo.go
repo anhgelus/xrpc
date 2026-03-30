@@ -28,7 +28,7 @@ func GetRecord[T Record](
 	cid string,
 ) (RecordStored[T], error) {
 	var v RecordStored[T]
-	u, err := rawGetRecord(ctx, client, did, v.Value.Type(), rkey, cid)
+	u, err := rawGetRecord(ctx, client, did, v.Value.Collection(), rkey, cid)
 	if err != nil {
 		return v, err
 	}
@@ -90,7 +90,7 @@ func ListRecords[T Record](
 	}
 	params := make(url.Values)
 	params.Add("repo", did.String())
-	params.Add("collection", v.Type().String())
+	params.Add("collection", v.Collection().String())
 	if limit == 0 {
 		limit = 50
 	}

@@ -10,9 +10,9 @@ import (
 
 // Record represents an ATProto record.
 type Record interface {
-	// Type returns the [atproto.NSID] of the lexicon behind the [Record].
+	// Collection returns the [atproto.NSID] of the lexicon behind the [Record].
 	// Must be stateless.
-	Type() *atproto.NSID
+	Collection() *atproto.NSID
 }
 
 var ErrNotRecord = errors.New("value got is not a record")
@@ -31,10 +31,10 @@ type Union struct {
 
 // AsUnion converts a [Record] to an [Union].
 func AsUnion(rec Record) *Union {
-	return &Union{tpe: rec.Type(), Content: rec}
+	return &Union{tpe: rec.Collection(), Content: rec}
 }
 
-func (u *Union) Type() *atproto.NSID {
+func (u *Union) Collection() *atproto.NSID {
 	return u.tpe
 }
 
@@ -65,7 +65,7 @@ func (u *Union) UnmarshalJSON(b []byte) error {
 //
 // Returns false if it cannot convert.
 func (u *Union) As(rec Record) bool {
-	if !u.Type().Is(rec.Type()) {
+	if !u.Collection().Is(rec.Collection()) {
 		return false
 	}
 	err := json.Unmarshal(u.Raw, rec)
@@ -79,7 +79,7 @@ func Marshal(rec Record) ([]byte, error) {
 		return nil, err
 	}
 	mp := v.(map[string]any)
-	mp["$type"] = rec.Type()
+	mp["$type"] = rec.Collection()
 	return json.Marshal(mp)
 }
 

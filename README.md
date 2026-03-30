@@ -71,7 +71,7 @@ type MyRecord struct {
 
 var myRecordType = atproto.NewNSIDBuilder("org.example").Finish("foo")
 
-func (r *MyRecord) Type() *atproto.NSID {
+func (r *MyRecord) Collection() *atproto.NSID {
     return myRecordType
 }
 ```
@@ -105,7 +105,7 @@ if err != nil {
 }
 ```
 
-> [!WARN] You should always call `xrpc.Marshal` when marshaling a `Record` into JSON!
+> [!WARNING] You should always call `xrpc.Marshal` when marshaling a `Record` into JSON!
 
 ### Complexe records
 

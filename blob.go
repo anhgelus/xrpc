@@ -8,14 +8,14 @@ import (
 
 var CollectionBlob = &atproto.NSID{Name: "blob"}
 
-// Blob represents an ATProto `blob` type.
+// Blob represents an ATProto blob.
 type Blob struct {
 	CID      string `json:"-"`
 	MimeType string `json:"mimeType"`
 	Size     uint   `json:"size"`
 }
 
-func (b *Blob) Type() *atproto.NSID {
+func (b *Blob) Collection() *atproto.NSID {
 	return CollectionBlob
 }
 
