@@ -105,7 +105,8 @@ if err != nil {
 }
 ```
 
-> [!WARNING] You should always call `xrpc.Marshal` when marshaling a `Record` into JSON!
+> [!WARNING] 
+> You should always call `xrpc.Marshal` when marshaling a `Record` into JSON!
 
 ### Complexe records
 
@@ -160,10 +161,17 @@ type MyComplexeRecord struct {
   - [x] Record key
   - [x] Handle
   - [x] AT URI
-- [ ] [Simple query and procedure](https://atproto.com/specs/xrpc#lexicon-http-endpoints)
+- [x] [Simple query and procedure](https://atproto.com/specs/xrpc#lexicon-http-endpoints)
   - [x] Client definition
   - [x] Record definition
   - [x] Marshal/Unmarshal
 - [ ] [Supports blob](https://atproto.com/specs/xrpc#blob-upload-and-download)
+  - [x] CID
+  - [ ] Fetching
+  - [ ] Uploading
+  - [ ] Deleting
 - [ ] [Authentication](https://atproto.com/specs/xrpc#authentication)
+  - [ ] Client definition
+  - [ ] OAuth
+  - [ ] Permissions scope
 - [ ] [Service proxying](https://atproto.com/specs/xrpc#service-proxying)
