@@ -17,8 +17,6 @@ type RecordStored[T Record] struct {
 	CID   string         `json:"cid"`
 }
 
-var repoNSID = atproto.NewNSIDBuilder("com.atproto.repo")
-
 // GetRecord returns a single [Record] from a repository.
 //
 // If cid is omitted, it will return the latest version of the [Record].

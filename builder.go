@@ -34,7 +34,7 @@ func (rb RequestBuilder) Params(params url.Values) RequestBuilder {
 
 // Build returns a valid string representation of the request's endpoint.
 //
-// Panics if pds or endpoint is not set.
+// Panics if server or endpoint is not set.
 func (rb RequestBuilder) Build() string {
 	if rb.server == "" {
 		panic("cannot finish: server (PDS or relay) is not set")

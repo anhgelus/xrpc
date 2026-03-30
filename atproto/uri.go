@@ -11,7 +11,7 @@ var ErrCannotFindPDS = errors.New("cannot find PDS")
 
 var ErrInvalidURI = errors.New("invalid AT URI")
 
-// RawURI is an [URI] where its [Authority] is not determined.
+// RawURI is an [URI] not validated.
 //
 // Use [RawURI.IsDID] and [RawURI.IsHandle] to determine the type.
 // Use [RawURI.URI] and [RawURI.Handle] to get the [URI].
@@ -24,7 +24,9 @@ type RawURI struct {
 // ParseRawURI in the raw given string.
 //
 // Returns [ErrInvalidURI] if the begining of the [RawURI] is invalid.
-// It doesn't verify the syntax: it is when the [RawURI] is converted into an [URI].
+// It doesn't verify the syntax.
+//
+// See [RawURI.URI] to verify the syntax.
 func ParseRawURI(raw string) (uri RawURI, err error) {
 	uri.raw = raw
 	b, raw, ok := strings.Cut(raw, "at://")

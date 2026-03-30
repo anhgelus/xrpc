@@ -105,6 +105,8 @@ if err != nil {
 }
 ```
 
+> [!WARN] You should always call `xrpc.Marshal` when marshaling a `Record` into JSON!
+
 ### Complexe records
 
 When your record is sent, it is firstly marshaled to a map following the json tags you have defined.
