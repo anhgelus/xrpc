@@ -12,9 +12,9 @@ import (
 
 // RecordStored represents a [Record] containg values about how it is stored.
 type RecordStored[T Record] struct {
-	Value T              `json:"value"`
-	URI   atproto.RawURI `json:"uri"`
-	CID   string         `json:"cid"`
+	Value T                    `json:"value"`
+	URI   atproto.RawURI       `json:"uri"`
+	CID   *atproto.CIDAsString `json:"cid"`
 }
 
 // GetRecord returns a single [Record] from a repository.
@@ -25,7 +25,7 @@ func GetRecord[T Record](
 	client Client,
 	did *atproto.DID,
 	rkey atproto.RecordKey,
-	cid string,
+	cid *atproto.CID,
 ) (RecordStored[T], error) {
 	var v RecordStored[T]
 	u, err := rawGetRecord(ctx, client, did, v.Value.Collection(), rkey, cid)
@@ -44,7 +44,7 @@ func rawGetRecord(
 	did *atproto.DID,
 	col *atproto.NSID,
 	rkey atproto.RecordKey,
-	cid string,
+	cid *atproto.CID,
 ) (RecordStored[*Union], error) {
 	var v RecordStored[*Union]
 	pds, err := did.PDS(ctx, client.Directory())
@@ -55,8 +55,8 @@ func rawGetRecord(
 	params.Add("repo", did.String())
 	params.Add("collection", col.String())
 	params.Add("rkey", rkey.String())
-	if cid != "" {
-		params.Add("cid", cid)
+	if cid != nil {
+		params.Add("cid", cid.String())
 	}
 	req := client.NewRequest().
 		Server(pds).

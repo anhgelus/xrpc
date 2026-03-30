@@ -87,7 +87,7 @@ rec, err := xrpc.GetRecord[*MyRecord](
     "https://...", // URL of the XRPC server (PDS, relay...)
     did,
     rkey,
-    ""
+    nil,
 )
 if err != nil {
     panic(err)

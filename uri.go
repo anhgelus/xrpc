@@ -15,5 +15,5 @@ func (c *BaseClient) FetchURI(ctx context.Context, uri atproto.URI) (RecordStore
 	if uri.Collection() == nil || uri.RecordKey() == nil {
 		return v, ErrIncompleteURI
 	}
-	return rawGetRecord(ctx, c, uri.Authority(), uri.Collection(), *uri.RecordKey(), "")
+	return rawGetRecord(ctx, c, uri.Authority(), uri.Collection(), *uri.RecordKey(), nil)
 }
