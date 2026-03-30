@@ -69,7 +69,7 @@ type MyRecord struct {
     Hey string `json:"hey"`
 }
 
-var myRecordType = atproto.NewNSIDBuilder("org.example").Finish("foo")
+var myRecordType = atproto.NewNSIDBuilder("org.example").Name("foo").Build()
 
 func (r *MyRecord) Collection() *atproto.NSID {
     return myRecordType
