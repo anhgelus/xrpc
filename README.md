@@ -167,11 +167,10 @@ type MyComplexeRecord struct {
   - [x] Marshal/Unmarshal
 - [ ] [Supports blob](https://atproto.com/specs/xrpc#blob-upload-and-download)
   - [x] CID
-  - [ ] Fetching
   - [ ] Uploading
   - [ ] Deleting
 - [ ] [Authentication](https://atproto.com/specs/xrpc#authentication)
-  - [ ] Client definition
+  - [x] Client definition
+  - [ ] JWT Auth
   - [ ] OAuth
-  - [ ] Permissions scope
 - [ ] [Service proxying](https://atproto.com/specs/xrpc#service-proxying)

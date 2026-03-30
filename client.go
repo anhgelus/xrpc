@@ -1,7 +1,6 @@
 package xrpc
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,6 +21,7 @@ const (
 // Can be used concurrently by multiple goroutines.
 //
 // See [NewClient] to create a new [BaseClient].
+// See [NewAuthClient] to create a new [AuthClient].
 type Client interface {
 	// Query performs an XRPC [Query].
 	//
@@ -71,22 +71,9 @@ func (c *BaseClient) Procedure(ctx context.Context, rb RequestBuilder, body Body
 }
 
 func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, body BodyRequest) ([]byte, error) {
-	var content io.Reader
-	if body != nil {
-		b, err := body.Body()
-		if err != nil {
-			return nil, err
-		}
-		content = bytes.NewReader(b)
-	}
-
-	req, err := http.NewRequest(method, rb.Build(), content)
+	req, err := rb.Build(method, body)
 	if err != nil {
 		return nil, err
-	}
-	req.Header.Set("Accept", "application/json")
-	if body != nil {
-		req.Header.Set("Content-Type", body.ContentType())
 	}
 
 	resp, err := c.client.Do(req.WithContext(ctx))

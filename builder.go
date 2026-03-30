@@ -1,7 +1,10 @@
 package xrpc
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -15,6 +18,7 @@ type RequestBuilder struct {
 	server   string
 	endpoint *atproto.NSID
 	params   url.Values
+	auth     Auth
 }
 
 func (rb RequestBuilder) Server(server string) RequestBuilder {
@@ -32,17 +36,42 @@ func (rb RequestBuilder) Params(params url.Values) RequestBuilder {
 	return rb
 }
 
+func (rb RequestBuilder) Auth(auth Auth) RequestBuilder {
+	rb.auth = auth
+	return rb
+}
+
 // Build returns a valid string representation of the request's endpoint.
 //
 // Panics if server or endpoint is not set.
-func (rb RequestBuilder) Build() string {
+func (rb RequestBuilder) Build(method string, body BodyRequest) (*http.Request, error) {
 	if rb.server == "" {
 		panic("cannot finish: server (PDS or relay) is not set")
 	}
 	if rb.endpoint == nil {
 		panic("cannot finish: endpoint is not set")
 	}
-	return rb.String()
+	var content io.Reader
+	if body != nil {
+		b, err := body.Body()
+		if err != nil {
+			return nil, err
+		}
+		content = bytes.NewReader(b)
+	}
+
+	req, err := http.NewRequest(method, rb.String(), content)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", body.ContentType())
+	}
+	if rb.auth != nil {
+		rb.auth.AuthRequest(req)
+	}
+	return req, nil
 }
 
 func (rb RequestBuilder) String() string {
