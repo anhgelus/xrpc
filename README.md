@@ -44,7 +44,7 @@ To create a new request, you can use `client.NewRequest`:
 // creating the request
 req := client.NewRequest().
     Server("https://..."). // URL of the XRPC server (PDS, relay...)
-    Endpoint(atproto.NewNSIDBuilder("org.example").Finish("fooBar")). // XRPC endpoint called
+    Endpoint(atproto.NewNSIDBuilder("org.example").Name("fooBar").Build()). // XRPC endpoint called
     Params(nil). // optional url.Values
     Build() // can panic if something is wrong
 // XRPC query

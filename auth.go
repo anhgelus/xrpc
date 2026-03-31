@@ -76,7 +76,7 @@ func (a *JWTAuth) AuthRequestRefresh() Auth {
 	return &JWTAuth{access: a.refresh}
 }
 
-const InvalidJWTAuth = "ExpiredToken"
+var InvalidJWTAuth = ErrStandard("ExpiredToken")
 
 func (a *JWTAuth) IsInvalidAuth(err ErrResponse) bool {
 	if err.StatusCode != http.StatusBadRequest {
@@ -86,7 +86,7 @@ func (a *JWTAuth) IsInvalidAuth(err ErrResponse) bool {
 	if !errors.As(err, &r) {
 		return false
 	}
-	return r.ErrorKind == InvalidJWTAuth
+	return errors.Is(r, InvalidJWTAuth)
 }
 
 // AuthClient is a [Client] used if an endpoint requires authentification.

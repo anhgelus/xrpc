@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"tangled.org/anhgelus.world/xrpc/atproto"
 )
@@ -107,7 +106,7 @@ func (c *BaseClient) NewRequest() RequestBuilder {
 type ErrStandard string
 
 func (e ErrStandard) Error() string {
-	return strings.ToLower(string(e))
+	return "defined lexicon: " + string(e)
 }
 
 // ErrStandardResponse represents a standard error response from the server following lexicon definition.
@@ -164,10 +163,10 @@ func (r ErrResponse) As(target any) bool {
 func (r ErrResponse) Error() string {
 	if r.Content != nil {
 		var std ErrStandardResponse
-		if !errors.As(r, &std) {
-			return fmt.Sprintf("%s (status code: %d)", r.Content, r.StatusCode)
+		if errors.As(r, &std) {
+			return std.Error()
 		}
-		return std.Error()
+		return fmt.Sprintf("%s (status code: %d)", r.Content, r.StatusCode)
 	}
 	return fmt.Sprintf("invalid status code: %d", r.StatusCode)
 }
