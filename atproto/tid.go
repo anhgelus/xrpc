@@ -121,6 +121,8 @@ func (t *TID) UnmarshalJSON(b []byte) error {
 
 // TIDGenerator generates [TID] that always increase.
 //
+// Can be used concurrently.
+//
 // See [NewTIDGenerator].
 type TIDGenerator struct {
 	clock    uint

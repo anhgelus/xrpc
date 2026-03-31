@@ -27,11 +27,11 @@ const (
 type Client interface {
 	// Query performs an XRPC [Query].
 	//
-	// Returns [ErrRequest] if the response code indicates an error >= 400.
+	// Returns [ErrResponse] if the response code indicates an error >= 400.
 	Query(context.Context, RequestBuilder) ([]byte, error)
 	// Procedure performs an XRPC [Procedure].
 	//
-	// Returns [ErrRequest] if the response code indicates an error >= 400.
+	// Returns [ErrResponse] if the response code indicates an error >= 400.
 	Procedure(context.Context, RequestBuilder, BodyRequest) ([]byte, error)
 	// FetchRawURI returns the [Record] pointed by the [atproto.RawURI].
 	//

@@ -171,6 +171,6 @@ type MyComplexeRecord struct {
   - [ ] Deleting
 - [ ] [Authentication](https://atproto.com/specs/xrpc#authentication)
   - [x] Client definition
-  - [ ] JWT Auth
+  - [x] JWT Auth
   - [ ] OAuth
 - [ ] [Service proxying](https://atproto.com/specs/xrpc#service-proxying)
