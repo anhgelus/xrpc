@@ -66,6 +66,11 @@ type sessionResult struct {
 	RefreshJWT string `json:"refreshJwt"`
 }
 
+var (
+	ErrAccountTakedown         = xrpc.ErrStandard("AccountTakedown")
+	ErrAuthFactorTokenRequired = xrpc.ErrStandard("AuthFactorTokenRequired")
+)
+
 // CreateSession using [xrpc.JWTAuth].
 func CreateSession(
 	ctx context.Context,

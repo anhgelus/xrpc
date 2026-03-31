@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"tangled.org/anhgelus.world/xrpc/atproto"
 )
@@ -103,7 +104,18 @@ func (c *BaseClient) NewRequest() RequestBuilder {
 	return RequestBuilder{}
 }
 
+type ErrStandard string
+
+func (e ErrStandard) Error() string {
+	return strings.ToLower(string(e))
+}
+
 // ErrStandardResponse represents a standard error response from the server following lexicon definition.
+//
+// You can check easily its lexicon type with [ErrStandard] and [errors.Is]:
+//
+//	var err ErrStandardResponse
+//	errors.Is(err, xrpc.ErrRecordNotFound)
 //
 // Obtained from [ErrResponse].
 type ErrStandardResponse struct {
@@ -116,6 +128,15 @@ func (r ErrStandardResponse) Error() string {
 		return fmt.Sprintf("%s: %s", r.ErrorKind, r.Message)
 	}
 	return r.ErrorKind
+}
+
+func (r ErrStandardResponse) Is(err error) bool {
+	std, ok := err.(ErrStandard)
+	if !ok {
+		e, ok := err.(ErrStandardResponse)
+		return ok && e.ErrorKind == r.ErrorKind
+	}
+	return r.ErrorKind == string(std)
 }
 
 // ErrResponse is returned by a [Client] when an [http.Response] contains a status code >= 400.

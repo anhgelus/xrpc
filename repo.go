@@ -17,6 +17,10 @@ type RecordStored[T Record] struct {
 	CID   *atproto.CIDAsString `json:"cid"`
 }
 
+var (
+	ErrRecordNotFound = ErrStandard("RecordNotFound")
+)
+
 // GetRecord returns a single [Record] from a repository.
 //
 // If cid is omitted, it will return the latest version of the [Record].
