@@ -62,12 +62,18 @@ func (a *JWTAuth) AuthRequest(req *http.Request) {
 	req.Header.Add("Authorization", "Bearer "+a.access)
 }
 
+// Refresh the [JWTAuth] with provided tokens.
 func (a *JWTAuth) Refresh(access, refresh string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	a.access = access
 	a.refresh = refresh
+}
+
+// AuthRequestRefresh returns an [Auth] using refresh token instead of access token.
+func (a *JWTAuth) AuthRequestRefresh() Auth {
+	return &JWTAuth{access: a.refresh}
 }
 
 const InvalidJWTAuth = "ExpiredToken"
@@ -85,28 +91,32 @@ func (a *JWTAuth) IsInvalidAuth(err ErrResponse) bool {
 
 // AuthClient is a [Client] used if an endpoint requires authentification.
 type AuthClient struct {
-	*BaseClient
+	Client
 	server string
 	auth   Auth
 }
 
 // NewAuthClient creates a new [AuthClient].
 //
+// Prefer using [server.CreateSession].
+//
 // See [NewAuthClientFetchServer] if you don't have the server linked with the [Auth].
-func NewAuthClient(base *BaseClient, auth Auth, server string) *AuthClient {
+func NewAuthClient(base Client, auth Auth, server string) *AuthClient {
 	return &AuthClient{base, server, auth}
 }
 
 // NewAuthClientFetchServer creates a new [AuthClient] and fetch the server linked with the [Auth].
 //
+// Prefer using [server.CreateSession].
+//
 // See [NewAuthClient] if you already have a server.
-func NewAuthClientFetchServer(ctx context.Context, base *BaseClient, auth Auth) (*AuthClient, error) {
+func NewAuthClientFetchServer(ctx context.Context, base Client, auth Auth) (*AuthClient, error) {
 	pds, err := auth.DID().PDS(ctx, base.Directory())
 	return NewAuthClient(base, auth, pds), err
 }
 
 func (c *AuthClient) NewRequest() RequestBuilder {
-	return c.BaseClient.
+	return c.Client.
 		NewRequest().
 		Server(c.server).
 		Auth(c.auth)
