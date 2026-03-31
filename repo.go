@@ -147,7 +147,7 @@ func DescribeRepo(ctx context.Context, client Client, did *atproto.DID) (*RepoDe
 }
 
 type sendRecordRequest struct {
-	Rec        Record               `json:"record"`
+	Rec        Record               `json:"record,omitempty"`
 	Repo       *atproto.DID         `json:"repo"`
 	Collection *atproto.NSID        `json:"collection"`
 	RKey       atproto.RecordKey    `json:"rkey,omitempty"`
@@ -244,4 +244,36 @@ func sendRecord(
 	}
 	var v SendRecordResult
 	return &v, json.Unmarshal(b, &v)
+}
+
+// DeleteRecord for the authentificated [Client].
+// Doesn't return an error if the [Record] doesn't exist.
+//
+// Rkey used to locate the [Record] (must be set!).
+// SwapCommit is used to compare and swap with the previous commit (not required, disabled by default).
+// SwapRecord is used to compare and swap with the previous record (not required, disabled by default ; cannot
+// represent nullable easily in Go...).
+func DeleteRecord[T Record](
+	ctx context.Context,
+	client Client,
+	rkey atproto.RecordKey,
+	swapCommit *atproto.CID,
+	swapRecord *atproto.CID,
+) (*CommitMeta, error) {
+	req := client.NewRequest().Endpoint(collection.Name("deleteRecord").Build())
+	var rec T
+	b, err := client.Procedure(ctx, req, AsJsonBodyRequest(sendRecordRequest{
+		Repo:       req.GetAuth().DID(),
+		Collection: rec.Collection(),
+		RKey:       rkey,
+		SwapCommit: (*atproto.CIDAsString)(swapCommit),
+		SwapRecord: (*atproto.CIDAsString)(swapRecord),
+	}))
+	if err != nil {
+		return nil, err
+	}
+	var v struct {
+		Commit CommitMeta `json:"commit"`
+	}
+	return &v.Commit, json.Unmarshal(b, &v)
 }
