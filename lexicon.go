@@ -9,6 +9,8 @@ import (
 )
 
 // Record represents an ATProto record.
+//
+// If it implements [MapMarshaler], it must returns a map[string]any.
 type Record interface {
 	// Collection returns the [atproto.NSID] of the lexicon behind the [Record].
 	// Must be stateless.
@@ -73,19 +75,20 @@ func (u *Union) As(rec Record) bool {
 }
 
 // Marshal a [Record] into a JSON.
-func Marshal(rec Record) ([]byte, error) {
-	v, err := MarshalToMap(rec)
+func Marshal(a any) ([]byte, error) {
+	v, err := MarshalToMap(a)
 	if err != nil {
 		return nil, err
 	}
-	mp := v.(map[string]any)
-	mp["$type"] = rec.Collection()
-	return json.Marshal(mp)
+	if rec, ok := a.(Record); ok {
+		v.(map[string]any)["$type"] = rec.Collection()
+	}
+	return json.Marshal(v)
 }
 
-var repoNSID = atproto.NewNSIDBuilder("com.atproto.repo")
+var collection = atproto.NewNSIDBuilder("com.atproto.repo")
 
-var CollectionStrongRef = repoNSID.Name("strongRef").Build()
+var CollectionStrongRef = collection.Name("strongRef").Build()
 
 // StrongRef is an [atproto.RawURI] with a content-hash fingerprint.
 //
@@ -106,4 +109,14 @@ func (s *StrongRef) GetRef(ctx context.Context, client Client) (*Union, error) {
 		return nil, err
 	}
 	return union.Value, nil
+}
+
+var CollectionCommitMeta = collection.Name("defs").Fragment("commitMeta").Build()
+
+// CommitMeta contains information about a certain commit.
+//
+// It doesn't implement [Record] because it is an object and not a record.
+type CommitMeta struct {
+	CID *atproto.CIDAsString `json:"cid"`
+	Rev atproto.TID          `json:"tid"`
 }

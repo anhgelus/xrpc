@@ -2,7 +2,6 @@ package xrpc
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -117,7 +116,7 @@ func AsJsonBodyRequest(v any) JsonBodyRequest {
 }
 
 func (j JsonBodyRequest) Body() ([]byte, error) {
-	return json.Marshal(j)
+	return Marshal(j)
 }
 
 func (j JsonBodyRequest) ContentType() string {

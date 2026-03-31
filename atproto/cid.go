@@ -162,8 +162,7 @@ func (c *CID) String() string {
 type CIDAsString CID
 
 func (c *CIDAsString) CID() *CID {
-	cid := CID(*c)
-	return &cid
+	return (*CID)(c)
 }
 
 func (c *CIDAsString) String() string {
@@ -196,8 +195,7 @@ func (c *CIDAsString) UnmarshalJSON(b []byte) error {
 type CIDLink CID
 
 func (c *CIDLink) CID() *CID {
-	cid := CID(*c)
-	return &cid
+	return (*CID)(c)
 }
 
 func (c *CIDLink) String() string {
@@ -226,8 +224,7 @@ func (c *CIDLink) UnmarshalJSON(b []byte) error {
 type CIDBytes CID
 
 func (c *CIDBytes) CID() *CID {
-	cid := CID(*c)
-	return &cid
+	return (*CID)(c)
 }
 
 func (c *CIDBytes) String() string {

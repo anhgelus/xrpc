@@ -64,7 +64,7 @@ func rawGetRecord(
 	}
 	req := client.NewRequest().
 		Server(pds).
-		Endpoint(repoNSID.Name("getRecord").Build()).
+		Endpoint(collection.Name("getRecord").Build()).
 		Params(params)
 	b, err := client.Query(ctx, req)
 	return v, json.Unmarshal(b, &v)
@@ -105,7 +105,7 @@ func ListRecords[T Record](
 	params.Add("reverse", fmt.Sprintf("%t", reverse))
 	req := client.NewRequest().
 		Server(pds).
-		Endpoint(repoNSID.Name("listRecords").Build()).
+		Endpoint(collection.Name("listRecords").Build()).
 		Params(params)
 	b, err := client.Query(ctx, req)
 	if err != nil {
@@ -136,12 +136,112 @@ func DescribeRepo(ctx context.Context, client Client, did *atproto.DID) (*RepoDe
 	params.Add("repo", did.String())
 	req := client.NewRequest().
 		Server(pds).
-		Endpoint(repoNSID.Name("describeRepo").Build()).
+		Endpoint(collection.Name("describeRepo").Build()).
 		Params(params)
 	b, err := client.Query(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	var v RepoDescription
+	return &v, json.Unmarshal(b, &v)
+}
+
+type sendRecordRequest struct {
+	Rec        Record               `json:"record"`
+	Repo       *atproto.DID         `json:"repo"`
+	Collection *atproto.NSID        `json:"collection"`
+	RKey       atproto.RecordKey    `json:"rkey,omitempty"`
+	Validate   *bool                `json:"validate,omitempty"`
+	SwapCommit *atproto.CIDAsString `json:"swapCommit,omitempty"`
+	SwapRecord *atproto.CIDAsString `json:"swapRecord,omitempty"`
+}
+
+// ErrInvalidSwap indicates that 'swap' didn't match current repo commit.
+var ErrInvalidSwap = ErrStandard("InvalidSwap")
+
+type RecordValidationStatus string
+
+const (
+	RecordValidationValid   RecordValidationStatus = "valid"
+	RecordValidationUnknown RecordValidationStatus = "unknown"
+)
+
+// SendRecordResult is returned by [CreateRecord] and [PutRecord].
+type SendRecordResult struct {
+	// URI of the [Record].
+	URI *atproto.RawURI `json:"uri"`
+	// CID of the [Record].
+	CID *atproto.CIDAsString `json:"cid"`
+	// Commit infromation about the [Record].
+	Commit *CommitMeta `json:"commitMeta,omitempty"`
+	// ValidationStatus indicates how the [Record] was validated.
+	ValidationStatus RecordValidationStatus `json:"validationStatus,omitempty"`
+}
+
+// CreateRecord for the authentificated [Client].
+//
+// Rkey used to store the [Record] (if unset, autopopulated by default).
+// Validate indicates whether the server should validate the [Record] against the Lexicon schema (if unset, validate
+// only for known lexicons).
+// Swap is used to compare and swap with the previous commit (not required, disabled by default).
+func CreateRecord(
+	ctx context.Context,
+	client Client,
+	rec Record,
+	rkey atproto.RecordKey,
+	validate *bool,
+	swap *atproto.CID,
+) (*SendRecordResult, error) {
+	req := client.NewRequest().Endpoint(collection.Name("createRecord").Build())
+	return sendRecord(ctx, client, req, sendRecordRequest{
+		Rec:        rec,
+		Repo:       req.GetAuth().DID(),
+		Collection: rec.Collection(),
+		RKey:       rkey,
+		Validate:   validate,
+		SwapCommit: (*atproto.CIDAsString)(swap),
+	})
+}
+
+// PutRecord for the authentificated [Client] (create or update the [Record]).
+//
+// Rkey used to store and to locate the [Record] (must be set!).
+// Validate indicates whether the server should validate the [Record] against the Lexicon schema (if unset, validate
+// only for known lexicons).
+// SwapCommit is used to compare and swap with the previous commit (not required, disabled by default).
+// SwapRecord is used to compare and swap with the previous record (not required, disabled by default ; cannot
+// represent nullable easily in Go...).
+func PutRecord(
+	ctx context.Context,
+	client Client,
+	rec Record,
+	rkey atproto.RecordKey,
+	validate *bool,
+	swapCommit *atproto.CID,
+	swapRecord *atproto.CID,
+) (*SendRecordResult, error) {
+	req := client.NewRequest().Endpoint(collection.Name("putRecord").Build())
+	return sendRecord(ctx, client, req, sendRecordRequest{
+		Rec:        rec,
+		Repo:       req.GetAuth().DID(),
+		Collection: rec.Collection(),
+		RKey:       rkey,
+		Validate:   validate,
+		SwapCommit: (*atproto.CIDAsString)(swapCommit),
+		SwapRecord: (*atproto.CIDAsString)(swapRecord),
+	})
+}
+
+func sendRecord(
+	ctx context.Context,
+	client Client,
+	req RequestBuilder,
+	body sendRecordRequest,
+) (*SendRecordResult, error) {
+	b, err := client.Procedure(ctx, req, AsJsonBodyRequest(body))
+	if err != nil {
+		return nil, err
+	}
+	var v SendRecordResult
 	return &v, json.Unmarshal(b, &v)
 }
