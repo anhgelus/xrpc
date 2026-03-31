@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"time"
 
 	"pgregory.net/rapid"
 )
@@ -68,7 +67,7 @@ func genURI(t *rapid.T, label string) (URI, string) {
 	return uri, uri.String()
 }
 
-var dir = NewDirectory(http.DefaultClient, net.DefaultResolver, 5*time.Minute)
+var dir = NewDirectory(http.DefaultClient, net.DefaultResolver)
 
 func TestParseRawURI(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {

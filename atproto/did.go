@@ -57,7 +57,7 @@ func (d *DID) String() string {
 	return "did:" + string(d.Method) + ":" + d.Identifier
 }
 
-func (d *DID) PDS(ctx context.Context, dir *Directory) (string, error) {
+func (d *DID) PDS(ctx context.Context, dir Directory) (string, error) {
 	doc, err := dir.ResolveDID(ctx, d)
 	if err != nil {
 		return "", err

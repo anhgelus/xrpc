@@ -55,7 +55,7 @@ func TestDirectory_ResolveHandle(t *testing.T) {
 	if testing.Short() {
 		t.Skip("not doing http requests in short")
 	}
-	dir := NewDirectory(http.DefaultClient, net.DefaultResolver, 5)
+	dir := NewDirectory(http.DefaultClient, net.DefaultResolver)
 	for _, handle := range realHandles {
 		h, err := ParseHandle(handle)
 		if err != nil {

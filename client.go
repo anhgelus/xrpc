@@ -40,17 +40,17 @@ type Client interface {
 	// HTTP returns the [http.Client] used by the [Client].
 	HTTP() *http.Client
 	// Directory returns the [atproto.Directory] used by the [Client].
-	Directory() *atproto.Directory
+	Directory() atproto.Directory
 }
 
 // BaseClient is a simple ATProto XRPC client.
 type BaseClient struct {
 	client *http.Client
-	dir    *atproto.Directory
+	dir    atproto.Directory
 }
 
 // NewClient creates a new [BaseClient].
-func NewClient(client *http.Client, dir *atproto.Directory) *BaseClient {
+func NewClient(client *http.Client, dir atproto.Directory) *BaseClient {
 	return &BaseClient{client, dir}
 }
 
@@ -58,7 +58,7 @@ func (c *BaseClient) HTTP() *http.Client {
 	return c.client
 }
 
-func (c *BaseClient) Directory() *atproto.Directory {
+func (c *BaseClient) Directory() atproto.Directory {
 	return c.dir
 }
 

@@ -41,7 +41,7 @@ func (r RawURI) String() string {
 	return r.raw
 }
 
-func (r RawURI) URI(ctx context.Context, dir *Directory) (URI, error) {
+func (r RawURI) URI(ctx context.Context, dir Directory) (URI, error) {
 	return ParseURI(ctx, dir, r.raw)
 }
 
@@ -83,7 +83,7 @@ func NewURI(authority *DID, collection *NSID, rkey RecordKey) URI {
 //
 // Returns [ErrInvalidURI] if the [URI] is invalid.
 // Returns [ErrCannotParseURIAs] if the [URI] is not compatible with the provided kind.
-func ParseURI(ctx context.Context, dir *Directory, raw string) (uri URI, err error) {
+func ParseURI(ctx context.Context, dir Directory, raw string) (uri URI, err error) {
 	// parsing authority
 	b, raw, ok := strings.Cut(raw, "at://")
 	if !ok || b != "" {

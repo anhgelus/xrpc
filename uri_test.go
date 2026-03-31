@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/http"
 	"testing"
-	"time"
 
 	"tangled.org/anhgelus.world/xrpc/atproto"
 )
@@ -14,7 +13,7 @@ var client Client
 
 func getClient() Client {
 	if client == nil {
-		client = NewClient(http.DefaultClient, atproto.NewDirectory(http.DefaultClient, net.DefaultResolver, 5*time.Minute))
+		client = NewClient(http.DefaultClient, atproto.NewDirectory(http.DefaultClient, net.DefaultResolver))
 	}
 	return client
 }
