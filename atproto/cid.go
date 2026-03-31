@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"slices"
 	"strings"
 )
@@ -104,7 +103,6 @@ var (
 //
 // See [ParseCIDString] to extract it from a string.
 func ParseCID(b []byte) (*CID, error) {
-	fmt.Printf("%v\n%d\n", b, len(b))
 	if len(b) < 5 {
 		return nil, ErrNotCID
 	}

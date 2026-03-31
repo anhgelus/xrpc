@@ -85,6 +85,5 @@ func TestBlob_JSON(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Log(string(b))
 	})
 }
