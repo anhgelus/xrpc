@@ -44,6 +44,8 @@ type Client interface {
 	Directory() atproto.Directory
 }
 
+var ErrInvalidAuth = errors.New("invalid auth")
+
 // BaseClient is a simple ATProto XRPC client.
 type BaseClient struct {
 	client *http.Client
@@ -82,11 +84,19 @@ func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, b
 		return nil, err
 	}
 	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 400 {
-		b, _ := io.ReadAll(resp.Body)
-		return nil, ErrResponse{resp.StatusCode, b}
+		err := ErrResponse{resp.StatusCode, b}
+		auth := rb.GetAuth()
+		if auth == nil {
+			return nil, err
+		}
+		if auth.IsInvalidAuth(err) {
+			return nil, ErrInvalidAuth
+		}
+		return nil, err
 	}
-	return io.ReadAll(resp.Body)
+	return b, err
 }
 
 func (c *BaseClient) NewRequest() RequestBuilder {
@@ -133,8 +143,7 @@ func (r ErrResponse) As(target any) bool {
 func (r ErrResponse) Error() string {
 	if r.Content != nil {
 		var std ErrStandardResponse
-		ok := errors.As(r, &std)
-		if !ok {
+		if !errors.As(r, &std) {
 			return fmt.Sprintf("%s (status code: %d)", r.Content, r.StatusCode)
 		}
 		return std.Error()

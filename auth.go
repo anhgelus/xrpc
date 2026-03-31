@@ -2,6 +2,7 @@ package xrpc
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sync"
 
@@ -15,7 +16,10 @@ import (
 // See [NewJWTAuth] to use [JWTAuth] to authentificate requests.
 type Auth interface {
 	DID() *atproto.DID
+	// AuthRequest authentificates the given [http.Request].
 	AuthRequest(*http.Request)
+	// IsInvalidAuth returns true if the [ErrResponse] indicates an invalid auth.
+	IsInvalidAuth(err ErrResponse) bool
 }
 
 // JWTAuth contains [Auth] data using JWT tokens.
@@ -60,10 +64,23 @@ func (a *JWTAuth) AuthRequest(req *http.Request) {
 
 func (a *JWTAuth) Refresh(access, refresh string) {
 	a.mu.Lock()
-	defer a.mu.RLock()
+	defer a.mu.Unlock()
 
 	a.access = access
 	a.refresh = refresh
+}
+
+const InvalidJWTAuth = "ExpiredToken"
+
+func (a *JWTAuth) IsInvalidAuth(err ErrResponse) bool {
+	if err.StatusCode != http.StatusBadRequest {
+		return false
+	}
+	var r ErrStandardResponse
+	if !errors.As(err, &r) {
+		return false
+	}
+	return r.ErrorKind == InvalidJWTAuth
 }
 
 // AuthClient is a [Client] used if an endpoint requires authentification.

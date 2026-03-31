@@ -41,6 +41,10 @@ func (rb RequestBuilder) Auth(auth Auth) RequestBuilder {
 	return rb
 }
 
+func (rb RequestBuilder) GetAuth() Auth {
+	return rb.auth
+}
+
 // Build returns a valid string representation of the request's endpoint.
 //
 // Panics if server or endpoint is not set.
