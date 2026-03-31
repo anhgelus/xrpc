@@ -3,6 +3,7 @@ package xrpc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -83,7 +84,7 @@ func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, b
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
 		b, _ := io.ReadAll(resp.Body)
-		return nil, ErrRequest{resp.StatusCode, b}
+		return nil, ErrResponse{resp.StatusCode, b}
 	}
 	return io.ReadAll(resp.Body)
 }
@@ -92,28 +93,51 @@ func (c *BaseClient) NewRequest() RequestBuilder {
 	return RequestBuilder{}
 }
 
-// ErrRequest is returned by a [Client] when an [http.Response] contains a status code >= 400.
-type ErrRequest struct {
+// ErrStandardResponse represents a standard error response from the server following lexicon definition.
+//
+// Obtained from [ErrResponse].
+type ErrStandardResponse struct {
+	ErrorKind string `json:"error"`
+	Message   string `json:"message,omitempty"`
+}
+
+func (r ErrStandardResponse) Error() string {
+	if r.Message != "" {
+		return fmt.Sprintf("%s: %s", r.ErrorKind, r.Message)
+	}
+	return r.ErrorKind
+}
+
+// ErrResponse is returned by a [Client] when an [http.Response] contains a status code >= 400.
+//
+// Use [errors.As] can be used to convert an [ErrResponse] into an [ErrStandardResponse].
+type ErrResponse struct {
 	// StatusCode of the response.
 	StatusCode int
 	// Content of the response.
 	Content []byte
 }
 
-func (r ErrRequest) Error() string {
+func (r ErrResponse) As(target any) bool {
+	v, ok := target.(*ErrStandardResponse)
+	if !ok || r.Content == nil {
+		return false
+	}
+	err := json.Unmarshal(r.Content, v)
+	if err != nil {
+		return false
+	}
+	return len(v.ErrorKind) > 0
+}
+
+func (r ErrResponse) Error() string {
 	if r.Content != nil {
-		var v struct {
-			Error   string `json:"string"`
-			Message string `json:"omitempty"`
-		}
-		err := json.Unmarshal(r.Content, &v)
-		if err != nil {
+		var std ErrStandardResponse
+		ok := errors.As(r, &std)
+		if !ok {
 			return fmt.Sprintf("%s (status code: %d)", r.Content, r.StatusCode)
 		}
-		if v.Message != "" {
-			return fmt.Sprintf("%s: %s", v.Error, v.Message)
-		}
-		return v.Error
+		return std.Error()
 	}
 	return fmt.Sprintf("invalid status code: %d", r.StatusCode)
 }
