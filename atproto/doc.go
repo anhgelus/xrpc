@@ -6,7 +6,7 @@
 // Each type can be safely unmarshaled from json too.
 //
 // When working with [Handle] and [DID], you will probably need a [Directory].
-// It is an interface used to retrieve [DIDDocument]s.
+// It is an interface used to retrieve [DIDDocument].
 // We strongly encourage you to implement your own [Directory] to include caching.
 //
 // When working with [URI], we have decided to normalize every [Handle] used as authority into their [DID].

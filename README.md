@@ -48,13 +48,13 @@ req := client.NewRequest().
     Params(nil). // optional url.Values
     Build() // can panic if something is wrong
 // XRPC query
-b, err := client.Query(context.TODO, req)
+b, err := client.Query(context.TODO(), req)
 if err != nil {
     panic(err)
 }
 // XRPC procedure
 body := xrpc.RawBodyRequest{[]byte("Hello world :D"), "text/plain"} // procedure body
-b, err := client.Procedure(context.TODO, req, body)
+b, err := client.Procedure(context.TODO(), req, body)
 if err != nil {
     panic(err)
 }

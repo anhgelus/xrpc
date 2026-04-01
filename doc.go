@@ -16,7 +16,7 @@
 //	  // record not found
 //	}
 //
-// ## Record
+// # Record
 //
 // You can use the [Record] interface to define records:
 //
@@ -43,11 +43,11 @@
 //
 // If you want to marshal your [Record] into a JSON, you must use [Marshal].
 //
-// ## Auth
+// # Auth
 //
 // Some endpoint requires [Auth].
 // The [AuthClient] is used to authentificate your requests.
 // Currently, only auth using JWT is supported.
 //
-// You can get a new [AuthClient] using [JWTAuth] with the subpackage [server].
+// You can get a new [AuthClient] using [JWTAuth] with the subpackage [xrpc/server].
 package xrpc

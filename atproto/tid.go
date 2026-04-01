@@ -23,14 +23,14 @@ var ErrInvalidTID = errors.New("invalid TID")
 // TID represents a timestamp identifier.
 //
 // See [ParseTID] to parse a [TID] from a string.
-// See [TIDGenerator] to generate [TID]s.
+// See [TIDGenerator] to generate [TID].
 type TID string
 
 // ParseTID in the raw given string.
 //
 // Returns [ErrInvalidTID] if the [TID] is invalid.
 //
-// See [TIDGenerator] to generate [TID]s.
+// See [TIDGenerator] to generate [TID].
 func ParseTID(raw string) (TID, error) {
 	if !regexpTID.MatchString(raw) {
 		return "", ErrInvalidTID
