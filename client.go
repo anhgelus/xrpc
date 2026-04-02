@@ -23,6 +23,7 @@ const (
 //
 // See [NewClient] to create a new [BaseClient].
 // See [NewAuthClient] to create a new [AuthClient].
+// See [NewCompatClient] to create a new [CompatClient].
 type Client interface {
 	// Query performs an XRPC [Query].
 	//

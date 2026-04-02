@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.0 - Blob supports
+
+New features:
+- upload and delete blobs
+- compat with generated lexicons from Indigo
+
 ## v0.1.0 - First release
 
 First release of XRPC!
