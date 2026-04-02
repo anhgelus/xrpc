@@ -6,6 +6,7 @@ New features:
 - upload blobs
 - compat with generated lexicons from Indigo
 - admin auth
+- create invite code
 
 Fix:
 - get return nil in value

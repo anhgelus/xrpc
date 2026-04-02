@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 
 	"tangled.org/anhgelus.world/xrpc"
@@ -31,4 +33,23 @@ func (a *AdminAuth) AuthRequest(req *http.Request) {
 
 func (a *AdminAuth) IsInvalidAuth(err xrpc.ErrResponse) bool {
 	return err.StatusCode == http.StatusUnauthorized
+}
+
+// CreateInviteCode with a number of use counts for an account.
+//
+// forAccount can be nil if anyone can use it.
+func CreateInviteCode(ctx context.Context, client xrpc.Client, useCount uint, forAccount *atproto.DID) (string, error) {
+	req := client.NewRequest().Endpoint(collection.Name("createInviteCode").Build())
+	v := struct {
+		UseCount   uint         `json:"useCount"`
+		ForAccount *atproto.DID `json:"forAccount,omitempty"`
+	}{useCount, forAccount}
+	b, err := client.Procedure(ctx, req, xrpc.AsJsonBodyRequest(v))
+	if err != nil {
+		return "", err
+	}
+	var out struct {
+		Code string `json:"code"`
+	}
+	return out.Code, json.Unmarshal(b, &out)
 }
