@@ -5,6 +5,7 @@
 New features:
 - upload blobs
 - compat with generated lexicons from Indigo
+- admin auth
 
 Fix:
 - get return nil in value
