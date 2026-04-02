@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const HandleInvalid Handle = "handle.invalid"
@@ -165,16 +166,38 @@ func (d *BaseDirectory) ResolveHandle(ctx context.Context, h Handle) (*DIDDocume
 }
 
 func (d *BaseDirectory) lookupHandle(ctx context.Context, h Handle) (*DID, error) {
-	res, err := d.resolver.LookupTXT(ctx, "_atproto."+h.String())
-	if err == nil {
-		did, e := parseDidTxtRec(res)
-		if e == nil {
-			return did, nil
+	ctx2, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	ch := make(chan *DID)
+
+	var err error
+	go func() {
+		res, err := d.resolver.LookupTXT(ctx, "_atproto."+h.String())
+		if err != nil {
+			ch <- nil
+			return
 		}
+		did, e := parseDidTxtRec(res)
 		if !errors.Is(e, ErrHandleNotFound) {
 			err = fmt.Errorf("cannot resolve via DNS records: %w", ErrCannotResolveHandle)
 		}
+		// avoid blocking goroutine
+		select {
+		case <-ctx2.Done():
+		default:
+			ch <- did
+		}
+	}()
+
+	select {
+	case <-ctx2.Done():
+	case did := <-ch:
+		if did != nil {
+			return did, nil
+		}
 	}
+
 	req, e := http.NewRequest(http.MethodGet, h.String()+"/.well-known/atproto-did", nil)
 	defer func() {
 		if e == nil {

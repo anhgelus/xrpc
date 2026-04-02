@@ -6,6 +6,9 @@ New features:
 - upload and delete blobs
 - compat with generated lexicons from Indigo
 
+Fix:
+- get return nil in value
+
 ## v0.1.0 - First release
 
 First release of XRPC!
