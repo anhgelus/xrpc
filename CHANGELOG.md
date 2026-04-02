@@ -3,7 +3,7 @@
 ## v0.2.0 - Blob supports
 
 New features:
-- upload and delete blobs
+- upload blobs
 - compat with generated lexicons from Indigo
 
 Fix:
