@@ -75,6 +75,8 @@ func (u *Union) As(rec Record) bool {
 }
 
 // Marshal a [Record] into a JSON.
+//
+// See [MarshalToMap].
 func Marshal(a any) ([]byte, error) {
 	v, err := MarshalToMap(a)
 	if err != nil {
