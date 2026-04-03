@@ -13,7 +13,11 @@ var client Client
 
 func getClient() Client {
 	if client == nil {
-		client = NewClient(http.DefaultClient, atproto.NewDirectory(http.DefaultClient, net.DefaultResolver))
+		client = NewClient(
+			http.DefaultClient,
+			atproto.NewDirectory(http.DefaultClient, net.DefaultResolver),
+			"XRPCTests/1.0.0 (Linux; Tangled Spindle; +https://tangled.org/anhgelus.world/xrpc/)",
+		)
 	}
 	return client
 }

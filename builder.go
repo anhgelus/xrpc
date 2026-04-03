@@ -14,10 +14,11 @@ import (
 //
 // Always use [Client.NewRequest] to get the default [RequestBuilder] of the [Client].
 type RequestBuilder struct {
-	server   string
-	endpoint *atproto.NSID
-	params   url.Values
-	auth     Auth
+	server    string
+	userAgent string
+	endpoint  *atproto.NSID
+	params    url.Values
+	auth      Auth
 }
 
 func (rb RequestBuilder) Server(server string) RequestBuilder {
@@ -32,6 +33,11 @@ func (rb RequestBuilder) Endpoint(endpoint *atproto.NSID) RequestBuilder {
 
 func (rb RequestBuilder) Params(params url.Values) RequestBuilder {
 	rb.params = params
+	return rb
+}
+
+func (rb RequestBuilder) UserAgent(ua string) RequestBuilder {
+	rb.userAgent = ua
 	return rb
 }
 
@@ -68,6 +74,7 @@ func (rb RequestBuilder) Build(method string, body BodyRequest) (*http.Request, 
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", rb.userAgent)
 	if body != nil {
 		req.Header.Set("Content-Type", body.ContentType())
 	}

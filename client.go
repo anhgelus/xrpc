@@ -49,13 +49,14 @@ var ErrInvalidAuth = errors.New("invalid auth")
 
 // BaseClient is a simple ATProto XRPC client.
 type BaseClient struct {
-	client *http.Client
-	dir    atproto.Directory
+	UserAgent string
+	client    *http.Client
+	dir       atproto.Directory
 }
 
 // NewClient creates a new [BaseClient].
-func NewClient(client *http.Client, dir atproto.Directory) *BaseClient {
-	return &BaseClient{client, dir}
+func NewClient(client *http.Client, dir atproto.Directory, userAgent string) *BaseClient {
+	return &BaseClient{userAgent, client, dir}
 }
 
 func (c *BaseClient) HTTP() *http.Client {

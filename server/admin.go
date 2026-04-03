@@ -36,6 +36,7 @@ func (a *AdminAuth) IsInvalidAuth(err xrpc.ErrResponse) bool {
 }
 
 // CreateInviteCode with a number of use counts for an account.
+// Requires [AdminAuth].
 //
 // forAccount can be nil if anyone can use it.
 func CreateInviteCode(ctx context.Context, client xrpc.Client, useCount uint, forAccount *atproto.DID) (string, error) {

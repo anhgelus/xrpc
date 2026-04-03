@@ -7,6 +7,7 @@ New features:
 - compat with generated lexicons from Indigo
 - admin auth
 - create invite code
+- specify user agent in client
 
 Fix:
 - get return nil in value
