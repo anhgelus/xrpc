@@ -170,10 +170,9 @@ You can wrap any `Client` created with XRPC as a `CompatClient` to use them in l
   - [x] Client definition
   - [x] Record definition
   - [x] Marshal/Unmarshal
-- [ ] [Supports blob](https://atproto.com/specs/xrpc#blob-upload-and-download)
+- [x] [Supports blob](https://atproto.com/specs/xrpc#blob-upload-and-download)
   - [x] CID
-  - [ ] Uploading
-  - [ ] Deleting
+  - [x] Uploading
 - [ ] [Authentication](https://atproto.com/specs/xrpc#authentication)
   - [x] Client definition
   - [x] JWT Auth
