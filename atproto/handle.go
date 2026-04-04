@@ -199,34 +199,34 @@ func (d *BaseDirectory) lookupHandle(ctx context.Context, h Handle) (*DID, error
 	}
 
 	req, e := http.NewRequest(http.MethodGet, h.String()+"/.well-known/atproto-did", nil)
-	defer func() {
+	fn := func() error {
 		if e == nil {
-			return
+			return nil
 		}
 		if err != nil {
-			err = errors.Join(err, fmt.Errorf("cannot resolve via HTTP: %w", e))
+			return errors.Join(err, fmt.Errorf("cannot resolve via HTTP: %w", e))
 		} else {
-			err = e
+			return e
 		}
-	}()
+	}
 	resp, e := d.client.Do(req.WithContext(ctx))
 	if e != nil {
-		return nil, err
+		return nil, fn()
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
 		e = ErrHandleNotFound
-		return nil, err
+		return nil, fn()
 	}
 	b, e := io.ReadAll(resp.Body)
 	if e != nil {
-		return nil, err
+		return nil, fn()
 	}
 	did, e := ParseDID(strings.TrimSpace(string(b)))
 	if e == nil {
 		return did, nil
 	}
-	return nil, fmt.Errorf("%w: invalid DID in well-known: %w", ErrCannotResolveHandle, err)
+	return nil, fmt.Errorf("%w: invalid DID in well-known: %w", ErrCannotResolveHandle, fn())
 }
 
 func parseDidTxtRec(res []string) (*DID, error) {
