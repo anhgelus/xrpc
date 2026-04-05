@@ -47,10 +47,6 @@ func rawGetRecord(
 	rkey atproto.RecordKey,
 	cid *atproto.CID,
 ) ([]byte, error) {
-	pds, err := did.PDS(ctx, client.Directory())
-	if err != nil {
-		return nil, err
-	}
 	params := make(url.Values)
 	params.Add("repo", did.String())
 	params.Add("collection", col.String())
@@ -58,9 +54,12 @@ func rawGetRecord(
 	if cid != nil {
 		params.Add("cid", cid.String())
 	}
-	req := client.NewRequest().
-		Server(pds).
-		Endpoint(collection.Name("getRecord").Build()).
+	req, err := client.NewRequest().
+		PDS(ctx, client.Directory(), did)
+	if err != nil {
+		return nil, err
+	}
+	req = req.Endpoint(collection.Name("getRecord").Build()).
 		Params(params)
 	return client.Query(ctx, req)
 }
@@ -83,10 +82,6 @@ func ListRecords[T Record](
 	reverse bool,
 ) ([]RecordStored[T], string, error) {
 	var v T
-	pds, err := did.PDS(ctx, client.Directory())
-	if err != nil {
-		return nil, "", err
-	}
 	params := make(url.Values)
 	params.Add("repo", did.String())
 	params.Add("collection", v.Collection().String())
@@ -98,9 +93,12 @@ func ListRecords[T Record](
 		params.Add("cursor", cursor)
 	}
 	params.Add("reverse", fmt.Sprintf("%t", reverse))
-	req := client.NewRequest().
-		Server(pds).
-		Endpoint(collection.Name("listRecords").Build()).
+	req, err := client.NewRequest().
+		PDS(ctx, client.Directory(), did)
+	if err != nil {
+		return nil, "", err
+	}
+	req = req.Endpoint(collection.Name("listRecords").Build()).
 		Params(params)
 	b, err := client.Query(ctx, req)
 	if err != nil {
@@ -123,15 +121,14 @@ type RepoDescription struct {
 
 // DescribeRepo returns information about an account and repository.
 func DescribeRepo(ctx context.Context, client Client, did *atproto.DID) (*RepoDescription, error) {
-	pds, err := did.PDS(ctx, client.Directory())
+	params := make(url.Values)
+	params.Add("repo", did.String())
+	req, err := client.NewRequest().
+		PDS(ctx, client.Directory(), did)
 	if err != nil {
 		return nil, err
 	}
-	params := make(url.Values)
-	params.Add("repo", did.String())
-	req := client.NewRequest().
-		Server(pds).
-		Endpoint(collection.Name("describeRepo").Build()).
+	req = req.Endpoint(collection.Name("describeRepo").Build()).
 		Params(params)
 	b, err := client.Query(ctx, req)
 	if err != nil {

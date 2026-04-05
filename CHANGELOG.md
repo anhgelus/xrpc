@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.0
+
+New features:
+- client to communicate with a relay instead of a PDS
+
+Fix:
+- invalid error set in lookupHandle
+
 ## v0.2.0 - Blob supports
 
 New features:

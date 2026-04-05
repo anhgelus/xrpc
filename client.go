@@ -24,6 +24,7 @@ const (
 // See [NewClient] to create a new [BaseClient].
 // See [NewAuthClient] to create a new [AuthClient].
 // See [NewCompatClient] to create a new [CompatClient].
+// See [NewRelayClient] to create a new [RelayClient].
 type Client interface {
 	// Query performs an XRPC [Query].
 	//
@@ -171,4 +172,19 @@ func (r ErrResponse) Error() string {
 		return fmt.Sprintf("%s (status code: %d)", r.Content, r.StatusCode)
 	}
 	return fmt.Sprintf("invalid status code: %d", r.StatusCode)
+}
+
+// RelayClient is a [Client] that communicates with a relay instead of a PDS.
+type RelayClient struct {
+	Client
+	relay string
+}
+
+// NewRelayClient creates a new [RelayClient].
+func NewRelayClient(client Client, relay string) *RelayClient {
+	return &RelayClient{client, relay}
+}
+
+func (c *RelayClient) NewRequest() RequestBuilder {
+	return c.Client.NewRequest().Server(c.relay).UseRelay()
 }

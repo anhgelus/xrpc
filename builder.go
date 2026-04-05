@@ -2,6 +2,7 @@ package xrpc
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,6 +15,7 @@ import (
 //
 // Always use [Client.NewRequest] to get the default [RequestBuilder] of the [Client].
 type RequestBuilder struct {
+	useRelay  bool
 	server    string
 	userAgent string
 	endpoint  *atproto.NSID
@@ -24,6 +26,19 @@ type RequestBuilder struct {
 func (rb RequestBuilder) Server(server string) RequestBuilder {
 	rb.server = strings.TrimSuffix(server, "/")
 	return rb
+}
+
+func (rb RequestBuilder) UseRelay() RequestBuilder {
+	rb.useRelay = true
+	return rb
+}
+
+func (rb RequestBuilder) PDS(ctx context.Context, dir atproto.Directory, did *atproto.DID) (RequestBuilder, error) {
+	var err error
+	if !rb.useRelay {
+		rb.server, err = did.PDS(ctx, dir)
+	}
+	return rb, err
 }
 
 func (rb RequestBuilder) Endpoint(endpoint *atproto.NSID) RequestBuilder {
