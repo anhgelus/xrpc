@@ -2,6 +2,9 @@
 
 ## v0.3.0
 
+Breaking change:
+- remove `atproto.Handle.DID()`, `atproto.Handle.PDS()` and `atproto.DID.PDS()`: use `atproto.Directory` and `atproto.DIDDocument` instead
+
 New features:
 - client to communicate with a relay instead of a PDS
 

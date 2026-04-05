@@ -66,26 +66,6 @@ func (h Handle) String() string {
 	return string(h)
 }
 
-func (h Handle) PDS(ctx context.Context, dir Directory) (string, error) {
-	doc, err := dir.ResolveHandle(ctx, h)
-	if err != nil {
-		return "", err
-	}
-	pds, ok := doc.PDS()
-	if !ok {
-		return "", ErrCannotFindPDS
-	}
-	return pds, nil
-}
-
-func (h Handle) DID(ctx context.Context, dir Directory) (*DID, error) {
-	doc, err := dir.ResolveHandle(ctx, h)
-	if err != nil {
-		return nil, err
-	}
-	return doc.DID, nil
-}
-
 func (h *Handle) UnmarshalJSON(b []byte) error {
 	var s string
 	err := json.Unmarshal(b, &s)
@@ -118,12 +98,12 @@ type Directory interface {
 	// Returns [ErrInvalidHandle] if the [Handle] is invalid (must display [HandleInvalid] in this case).
 	// Returns [ErrHandleNotFound] if the [Handle] is not found.
 	// Returns [ErrCannotResolveHandle] if the [DID] stored is invalid.
-	ResolveHandle(ctx context.Context, h Handle) (*DIDDocument, error)
+	ResolveHandle(context.Context, Handle) (*DIDDocument, error)
 	// ResolveDID returns the [DIDDocument] associated with.
 	//
 	// Returns [ErrDIDPlcResolve] if the [DIDPlcDirectory] returns an error (only if [DID.Method] is [DIDPlc]).
 	// Returns [ErrDIDWebResolve] if the web server returns an error (only if [DID.Method] is [DIDWeb]).
-	ResolveDID(ctx context.Context, h *DID) (*DIDDocument, error)
+	ResolveDID(context.Context, *DID) (*DIDDocument, error)
 }
 
 // BaseDirectory is a simple [Directory].

@@ -111,7 +111,14 @@ func NewAuthClient(base Client, auth Auth, server string) *AuthClient {
 //
 // See [NewAuthClient] if you already have a server.
 func NewAuthClientFetchServer(ctx context.Context, base Client, auth Auth) (*AuthClient, error) {
-	pds, err := auth.DID().PDS(ctx, base.Directory())
+	doc, err := base.Directory().ResolveDID(ctx, auth.DID())
+	if err != nil {
+		return nil, err
+	}
+	pds, ok := doc.PDS()
+	if !ok {
+		return nil, atproto.ErrCannotFindPDS
+	}
 	return NewAuthClient(base, auth, pds), err
 }
 

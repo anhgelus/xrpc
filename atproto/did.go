@@ -57,18 +57,6 @@ func (d *DID) String() string {
 	return "did:" + string(d.Method) + ":" + d.Identifier
 }
 
-func (d *DID) PDS(ctx context.Context, dir Directory) (string, error) {
-	doc, err := dir.ResolveDID(ctx, d)
-	if err != nil {
-		return "", err
-	}
-	pds, ok := doc.PDS()
-	if !ok {
-		return "", ErrCannotFindPDS
-	}
-	return pds, nil
-}
-
 func (d *DID) URI() URI {
 	return URI{authority: d}
 }

@@ -34,11 +34,18 @@ func (rb RequestBuilder) UseRelay() RequestBuilder {
 }
 
 func (rb RequestBuilder) PDS(ctx context.Context, dir atproto.Directory, did *atproto.DID) (RequestBuilder, error) {
-	var err error
 	if !rb.useRelay {
-		rb.server, err = did.PDS(ctx, dir)
+		doc, err := dir.ResolveDID(ctx, did)
+		if err != nil {
+			return rb, err
+		}
+		var ok bool
+		rb.server, ok = doc.PDS()
+		if !ok {
+			return rb, atproto.ErrCannotFindPDS
+		}
 	}
-	return rb, err
+	return rb, nil
 }
 
 func (rb RequestBuilder) Endpoint(endpoint *atproto.NSID) RequestBuilder {
