@@ -2,9 +2,7 @@ package atproto
 
 import (
 	"errors"
-	"fmt"
 	"net"
-	"net/http"
 )
 
 // IsErrCannotParse returns true if the error is a cannot parse error like.
@@ -27,7 +25,7 @@ type ErrDIDNotFound struct {
 }
 
 func (err ErrDIDNotFound) Error() string {
-	return "did not found: " + err.inner.Error()
+	return "DID not found: " + err.inner.Error()
 }
 
 func (err ErrDIDNotFound) Unwrap() error {
@@ -35,21 +33,14 @@ func (err ErrDIDNotFound) Unwrap() error {
 }
 
 func (err ErrDIDNotFound) Is(e error) bool {
-	var plc ErrDIDPlcResolve
-	if errors.As(err, &plc) {
-		return plc.StatusCode == http.StatusNotFound
-	}
-	var web ErrDIDWebResolve
-	if errors.As(err, &web) {
-		return web.StatusCode == http.StatusNotFound
-	}
-	return false
+	_, ok := e.(ErrDIDNotFound)
+	return ok
 }
 
 func handleHTTPError(err error, notFoundErr error) error {
 	var dns *net.DNSError
 	if errors.As(err, &dns) && dns.IsNotFound {
-		return fmt.Errorf("%w: %w", notFoundErr, err)
+		return notFoundErr
 	}
 	return err
 }

@@ -103,29 +103,27 @@ func (h Handle) did(ctx context.Context, client *http.Client, resolver *net.Reso
 			err = fmt.Errorf("cannot resolve via DNS records: %w", ErrCannotResolveHandle)
 		}
 	}
-
 	req, e := http.NewRequest(http.MethodGet, "https://"+h.String()+"/.well-known/atproto-did", nil)
-	fn := func() error {
-		e = fmt.Errorf("cannot resolve via HTTP: %w", e)
-		return errors.Join(err, e)
+	fn := func(e error) error {
+		return errors.Join(err, fmt.Errorf("cannot resolve via HTTP: %w", e))
 	}
 	resp, e := client.Do(req.WithContext(ctx))
 	if e != nil {
-		e = handleHTTPError(e, ErrCannotParseHandle)
-		return nil, fn()
+		return nil, fn(
+			handleHTTPError(e, fmt.Errorf("%w: %w", ErrCannotParseHandle, e)),
+		)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		e = fmt.Errorf("%w: %w", ErrCannotParseHandle, ErrHandleNotFound)
-		return nil, fn()
+		return nil, fn(ErrHandleNotFound)
 	}
 	b, e := io.ReadAll(resp.Body)
 	if e != nil {
-		return nil, fn()
+		return nil, fn(e)
 	}
 	did, e := ParseDID(strings.TrimSpace(string(b)))
 	if e != nil {
-		return nil, fmt.Errorf("%w: invalid DID in well-known: %w", ErrCannotResolveHandle, fn())
+		return nil, fn(fmt.Errorf("%w: invalid DID in well-known: %w", ErrCannotResolveHandle, e))
 	}
 	return did, nil
 }
