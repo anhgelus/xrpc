@@ -80,6 +80,7 @@ func (d *DID) document(ctx context.Context, client *http.Client) (*DIDDocument, 
 		}
 		resp, err := client.Do(req.WithContext(ctx))
 		if err != nil {
+			err = handleHTTPError(err, ErrCannotParseDID)
 			return nil, err
 		}
 		defer resp.Body.Close()

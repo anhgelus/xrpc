@@ -111,11 +111,7 @@ func (h Handle) did(ctx context.Context, client *http.Client, resolver *net.Reso
 	}
 	resp, e := client.Do(req.WithContext(ctx))
 	if e != nil {
-		var dns *net.DNSError
-		if errors.As(e, &dns) && dns.IsNotFound {
-			e = fmt.Errorf("%w: %w", ErrCannotParseHandle, e)
-			return nil, fn()
-		}
+		e = handleHTTPError(e, ErrCannotParseHandle)
 		return nil, fn()
 	}
 	defer resp.Body.Close()

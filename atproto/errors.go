@@ -2,6 +2,8 @@ package atproto
 
 import (
 	"errors"
+	"fmt"
+	"net"
 	"net/http"
 )
 
@@ -42,4 +44,12 @@ func (err ErrDIDNotFound) Is(e error) bool {
 		return web.StatusCode == http.StatusNotFound
 	}
 	return false
+}
+
+func handleHTTPError(err error, notFoundErr error) error {
+	var dns *net.DNSError
+	if errors.As(err, &dns) && dns.IsNotFound {
+		return fmt.Errorf("%w: %w", notFoundErr, err)
+	}
+	return err
 }
