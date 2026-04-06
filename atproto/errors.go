@@ -1,8 +1,14 @@
 package atproto
 
-import "errors"
+import (
+	"errors"
+	"net/http"
+)
 
 // ErrCannotParse is a generic error containing a cannot parse error like.
+//
+// See [AsCannotParse] to converts an error into [ErrCannotParse].
+// The standard [errors.As] does not work: this is mainly a meta error.
 type ErrCannotParse struct {
 	inner error
 }
@@ -37,4 +43,31 @@ func AsCannotParse(err error) ErrCannotParse {
 		panic("cannot convert " + err.Error() + " to parse error")
 	}
 	return ErrCannotParse{err}
+}
+
+// ErrDIDNotFound indicates that the [DID] was not found.
+//
+// Use [errors.As] on [ErrDIDPlcResolve] or on [ErrDIDWebResolve] to get it.
+type ErrDIDNotFound struct {
+	inner error
+}
+
+func (err ErrDIDNotFound) Error() string {
+	return err.inner.Error()
+}
+
+func (err ErrDIDNotFound) Unwrap() error {
+	return err.inner
+}
+
+func (err ErrDIDNotFound) Is(e error) bool {
+	var plc ErrDIDPlcResolve
+	if errors.As(err, &plc) {
+		return plc.StatusCode == http.StatusNotFound
+	}
+	var web ErrDIDWebResolve
+	if errors.As(err, &web) {
+		return web.StatusCode == http.StatusNotFound
+	}
+	return false
 }

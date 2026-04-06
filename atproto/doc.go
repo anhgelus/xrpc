@@ -21,8 +21,13 @@
 //
 //	var err error
 //	if errors.Is(err, atproto.ErrCannotParse{}) {
-//	  // err is a ErrCannotParse
+//	  // err comes from an arg
 //	}
 //
-// You can use [AsCannotParse] to converts into an [ErrCannotParse].
+// You can use [ErrDIDNotFound] to check if the [DID] was not found:
+//
+//	var err error
+//	if errors.Is(err, atproto.ErrDIDNotFound{}) {
+//	  // err comes from a DID that does not exist
+//	}
 package atproto

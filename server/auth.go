@@ -66,6 +66,7 @@ type sessionResult struct {
 	RefreshJWT string `json:"refreshJwt"`
 }
 
+// Standard errors returned by server lexicons.
 var (
 	ErrAccountTakedown         = xrpc.ErrStandard("AccountTakedown")
 	ErrAuthFactorTokenRequired = xrpc.ErrStandard("AuthFactorTokenRequired")
