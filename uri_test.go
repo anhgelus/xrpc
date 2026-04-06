@@ -35,6 +35,7 @@ func TestClient_FetchURI(t *testing.T) {
 	}
 	c := getClient()
 	for _, raw := range validURI {
+		t.Log(raw)
 		uri, err := atproto.ParseURI(context.Background(), c.Directory(), raw)
 		if err != nil {
 			t.Fatal(err)
