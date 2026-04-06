@@ -17,10 +17,10 @@
 //
 // # Errors
 //
-// You can use [ErrCannotParse] to check if there is an error while parsing arguments.
+// You can use [IsErrCannotParse] to check if there is an error while parsing arguments.
 //
 //	var err error
-//	if errors.Is(err, atproto.ErrCannotParse{}) {
+//	if atproto.IsErrCannotParse(err) {
 //	  // err comes from an arg
 //	}
 //

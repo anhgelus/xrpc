@@ -231,6 +231,17 @@ func (e ErrDIDPlcResolve) Error() string {
 	return fmt.Sprintf("%s (status code: %d)", e.Message, e.StatusCode)
 }
 
+func (e ErrDIDPlcResolve) Is(err error) bool {
+	switch err.(type) {
+	case ErrDIDPlcResolve:
+		return true
+	case ErrDIDNotFound:
+		return e.StatusCode == http.StatusNotFound
+	default:
+		return false
+	}
+}
+
 func (e ErrDIDPlcResolve) As(target any) bool {
 	v, ok := target.(*ErrDIDNotFound)
 	if !ok || e.StatusCode == http.StatusNotFound {
@@ -253,6 +264,17 @@ func (e ErrDIDWebResolve) Error() string {
 		return fmt.Sprintf("invalid status code while fetching document: %d", e.StatusCode)
 	}
 	return fmt.Sprintf("%s (status code: %d)", e.Body, e.StatusCode)
+}
+
+func (e ErrDIDWebResolve) Is(err error) bool {
+	switch err.(type) {
+	case ErrDIDWebResolve:
+		return true
+	case ErrDIDNotFound:
+		return e.StatusCode == http.StatusNotFound
+	default:
+		return false
+	}
 }
 
 func (e ErrDIDWebResolve) As(target any) bool {
