@@ -120,30 +120,30 @@ func (h Handle) did(ctx context.Context, client *http.Client, resolver *net.Reso
 
 	select {
 	case <-ctx2.Done():
+		err = fmt.Errorf("cannot resolve via DNS records: %w", ctx2.Err())
 	case did := <-ch:
 		if did != nil {
 			return did, nil
 		}
 	}
 
-	req, e := http.NewRequest(http.MethodGet, h.String()+"/.well-known/atproto-did", nil)
+	req, e := http.NewRequest(http.MethodGet, "https://"+h.String()+"/.well-known/atproto-did", nil)
 	fn := func() error {
-		if e == nil {
-			return nil
-		}
-		if err != nil {
-			return errors.Join(err, fmt.Errorf("cannot resolve via HTTP: %w", e))
-		} else {
-			return e
-		}
+		e = fmt.Errorf("cannot resolve via HTTP: %w", e)
+		return errors.Join(err, e)
 	}
 	resp, e := client.Do(req.WithContext(ctx))
 	if e != nil {
+		var dns *net.DNSError
+		if errors.As(e, &dns) && dns.IsNotFound {
+			e = fmt.Errorf("%w: %w", ErrCannotParseHandle, e)
+			return nil, fn()
+		}
 		return nil, fn()
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		e = ErrHandleNotFound
+		e = fmt.Errorf("%w: %w", ErrCannotParseHandle, ErrHandleNotFound)
 		return nil, fn()
 	}
 	b, e := io.ReadAll(resp.Body)
