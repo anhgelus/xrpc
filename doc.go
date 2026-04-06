@@ -16,6 +16,8 @@
 //	  // record not found
 //	}
 //
+// The [ErrStandardResponse] already wraps the [ErrStandard]: you can use [errors.Unwrap] to get it.
+//
 // # Record
 //
 // You can use the [Record] interface to define records:

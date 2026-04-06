@@ -2,6 +2,7 @@ package atproto
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -10,6 +11,12 @@ const (
 	//
 	// See [ParseTime]
 	TimeFormat = "2006-01-02T15:04:05.000Z07:00"
+)
+
+// Errors returned while parsing a [time.Time].
+var (
+	// ErrCannotParseTime is returned by [ParseTime] if an error occurs.
+	ErrCannotParseTime = errors.New("cannot parse time")
 )
 
 // ParseTime returns a [time.Time] if it follows the standard time format specified by the ATProto.
@@ -21,6 +28,11 @@ func ParseTime(raw string) (t time.Time, err error) {
 	if err != nil {
 		t, err = time.Parse(time.RFC3339, raw)
 	}
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("%w: %w", ErrCannotParseTime, err)
+		}
+	}()
 	if err != nil {
 		return
 	}

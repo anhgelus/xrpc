@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// HandleInvalid is a standard way to display an invalid [Handle].
 const HandleInvalid Handle = "handle.invalid"
 
 const HandleMaxLength = 253
@@ -150,10 +151,10 @@ func (h Handle) did(ctx context.Context, client *http.Client, resolver *net.Reso
 		return nil, fn()
 	}
 	did, e := ParseDID(strings.TrimSpace(string(b)))
-	if e == nil {
-		return did, nil
+	if e != nil {
+		return nil, fmt.Errorf("%w: invalid DID in well-known: %w", ErrCannotResolveHandle, fn())
 	}
-	return nil, fmt.Errorf("%w: invalid DID in well-known: %w", ErrCannotResolveHandle, fn())
+	return did, nil
 }
 
 // Directory is used to get [DIDDocument] from [Handle] and [DID].
@@ -204,7 +205,7 @@ func (d *BaseDirectory) ResolveHandle(ctx context.Context, h Handle) (*DIDDocume
 	}
 	doc, err := d.ResolveDID(ctx, did)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrCannotResolveHandle, err)
 	}
 	res, ok := doc.Handle()
 	if !ok || res != h {

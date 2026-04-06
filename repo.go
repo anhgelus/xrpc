@@ -17,8 +17,11 @@ type RecordStored[T Record] struct {
 	CID   *atproto.CIDAsString `json:"cid"`
 }
 
+// Standard errors returned by repo lexicons.
 var (
 	ErrRecordNotFound = ErrStandard("RecordNotFound")
+	// ErrInvalidSwap indicates that 'swap' didn't match current repo commit.
+	ErrInvalidSwap = ErrStandard("InvalidSwap")
 )
 
 // GetRecord returns a single [Record] from a repository.
@@ -147,9 +150,6 @@ type sendRecordRequest struct {
 	SwapCommit *atproto.CIDAsString `json:"swapCommit,omitempty"`
 	SwapRecord *atproto.CIDAsString `json:"swapRecord,omitempty"`
 }
-
-// ErrInvalidSwap indicates that 'swap' didn't match current repo commit.
-var ErrInvalidSwap = ErrStandard("InvalidSwap")
 
 type RecordValidationStatus string
 

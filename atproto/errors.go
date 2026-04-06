@@ -25,7 +25,8 @@ func (err ErrCannotParse) Is(e error) bool {
 		errors.Is(e, ErrCannotParseCID) ||
 		errors.Is(e, ErrCannotParseDID) ||
 		errors.Is(e, ErrCannotParseNSID) ||
-		errors.Is(e, ErrCannotParseTID)
+		errors.Is(e, ErrCannotParseTID) ||
+		errors.Is(e, ErrCannotParseTime)
 }
 
 // AsCannotParse converts an error into [ErrCannotParse].

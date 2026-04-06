@@ -8,9 +8,9 @@ import (
 	"tangled.org/anhgelus.world/xrpc/atproto"
 )
 
+// ErrIncompleteURI is returned when the [atproto.URI] does not have enough information to be used.
 var ErrIncompleteURI = errors.New("incomplete URI")
 
-// FetchURI is like [Client.FetchRawURI], but when the uri is determined.
 func (c *BaseClient) FetchURI(ctx context.Context, uri atproto.URI) (RecordStored[*Union], error) {
 	var v RecordStored[*Union]
 	if uri.Collection() == nil || uri.RecordKey() == nil {

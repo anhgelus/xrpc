@@ -49,7 +49,7 @@ var (
 	ErrCannotParseDID = errors.New("cannot parse DID")
 )
 
-// DID represents a DID in the context of the ATProto.
+// DID represents a W3C DID in the context of the ATProto.
 //
 // See [ParseDID] to parse a [DID] from a string.
 type DID struct {
@@ -178,6 +178,7 @@ func ParseDID(raw string) (*DID, error) {
 	return &d, nil
 }
 
+// DIDDocument stores information about a [DID].
 type DIDDocument struct {
 	DID                *DID                    `json:"id"`
 	AlsoKnownAs        []string                `json:"alsoKnownAs,omitempty"`
@@ -229,9 +230,9 @@ func (e ErrDIDPlcResolve) Error() string {
 	return e.Message
 }
 
-// ErrDIDWebResolve is returned by the web server.
+// ErrDIDWebResolve is an error returned by the [DIDPlcDirectory].
 //
-// See [DID.document].
+// See [Directory.ResolveDID] and [Directory.ResolveHandle].
 type ErrDIDWebResolve struct {
 	StatusCode int
 	Body       []byte

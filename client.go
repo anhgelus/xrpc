@@ -11,6 +11,7 @@ import (
 	"tangled.org/anhgelus.world/xrpc/atproto"
 )
 
+// Standard values used by a XRPC client
 const (
 	Query     = http.MethodGet
 	Procedure = http.MethodPost
@@ -46,7 +47,18 @@ type Client interface {
 	Directory() atproto.Directory
 }
 
-var ErrInvalidAuth = errors.New("invalid auth")
+// ErrInvalidAuth is returned when the [Auth] used is invalid.
+type ErrInvalidAuth struct {
+	inner error
+}
+
+func (err ErrInvalidAuth) Error() string {
+	return "invalid auth"
+}
+
+func (err ErrInvalidAuth) Unwrap() error {
+	return err.inner
+}
 
 // BaseClient is a simple ATProto XRPC client.
 type BaseClient struct {
@@ -95,7 +107,7 @@ func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, b
 			return nil, err
 		}
 		if auth.IsInvalidAuth(err) {
-			return nil, ErrInvalidAuth
+			return nil, ErrInvalidAuth{err}
 		}
 		return nil, err
 	}
@@ -106,10 +118,11 @@ func (c *BaseClient) NewRequest() RequestBuilder {
 	return RequestBuilder{}
 }
 
+// ErrStandard is an error defined in the lexicon.
 type ErrStandard string
 
 func (e ErrStandard) Error() string {
-	return "defined lexicon: " + string(e)
+	return "defined lexicon error: " + string(e)
 }
 
 // ErrStandardResponse represents a standard error response from the server following lexicon definition.
@@ -130,6 +143,10 @@ func (r ErrStandardResponse) Error() string {
 		return fmt.Sprintf("%s: %s", r.ErrorKind, r.Message)
 	}
 	return r.ErrorKind
+}
+
+func (r ErrStandardResponse) Unwrap() error {
+	return ErrStandard(r.ErrorKind)
 }
 
 func (r ErrStandardResponse) Is(err error) bool {
