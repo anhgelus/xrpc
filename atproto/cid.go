@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 )
@@ -91,12 +92,15 @@ type CID struct {
 	Digest   []byte
 }
 
+// Errors returned while parsing a [CID].
 var (
 	ErrNotCID                 = errors.New("not a CID")
 	ErrUnsupportedCIDVersion  = errors.New("unsupported CID version")
 	ErrUnsupportedCIDCodec    = errors.New("unsupported CID codec")
 	ErrUnsupportedCIDHash     = errors.New("unsupported CID hash")
 	ErrUnsupportedCIDEncoding = errors.New("unsupported CID encoding")
+	// ErrCannotParseCID is returned by [ParseCID] if an error occurs.
+	ErrCannotParseCID = errors.New("cannot parse CID")
 )
 
 // ParseCID from bytes.
@@ -104,26 +108,26 @@ var (
 // See [ParseCIDString] to extract it from a string.
 func ParseCID(b []byte) (*CID, error) {
 	if len(b) < 5 {
-		return nil, ErrNotCID
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseCID, ErrNotCID)
 	}
 	var c CID
 	c.Version = uint(b[0])
 	if c.Version != CIDVersion {
-		return nil, ErrUnsupportedCIDVersion
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseCID, ErrUnsupportedCIDVersion)
 	}
 	c.Codec = CIDCodec(b[1])
 	if !slices.Contains(cidCodecs, c.Codec) {
-		return nil, ErrUnsupportedCIDCodec
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseCID, ErrUnsupportedCIDCodec)
 	}
 	c.HashType = CIDHashType(b[2])
 	size, ok := cidHashes[c.HashType]
 	if !ok {
-		return nil, ErrUnsupportedCIDHash
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseCID, ErrUnsupportedCIDHash)
 	}
 	c.HashSize = uint(b[3])
 	next := b[4:]
 	if len(next) != int(c.HashSize) || size != c.HashSize {
-		return nil, ErrNotCID
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseCID, ErrNotCID)
 	}
 	c.Digest = next
 	return &c, nil

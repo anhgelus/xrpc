@@ -3,6 +3,7 @@ package atproto
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -18,7 +19,12 @@ const (
 
 var regexpTID = regexp.MustCompile(`^[234567abcdefghij][234567abcdefghijklmnopqrstuvwxyz]{12}$`)
 
-var ErrInvalidTID = errors.New("invalid TID")
+// Errors returned while parsing a [TID].
+var (
+	ErrNotTID = errors.New("not a TID")
+	// ErrCannotParseTID is returned by [ParseTID] if an error occurs.
+	ErrCannotParseTID = errors.New("cannot parse TID")
+)
 
 // TID represents a timestamp identifier.
 //
@@ -28,12 +34,12 @@ type TID string
 
 // ParseTID in the raw given string.
 //
-// Returns [ErrInvalidTID] if the [TID] is invalid.
+// Returns [ErrNotTID] if the [TID] is invalid.
 //
 // See [TIDGenerator] to generate [TID].
 func ParseTID(raw string) (TID, error) {
 	if !regexpTID.MatchString(raw) {
-		return "", ErrInvalidTID
+		return "", fmt.Errorf("%w: %w", ErrCannotParseTID, ErrNotTID)
 	}
 	return TID(raw), nil
 }

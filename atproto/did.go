@@ -18,6 +18,7 @@ func (d DIDMethod) String() string {
 	return string(d)
 }
 
+// Supported [DIDMethod].
 const (
 	DIDWeb DIDMethod = "web"
 	DIDPlc DIDMethod = "plc"
@@ -40,9 +41,12 @@ const (
 	DIDPlcDirectory        = "https://plc.directory"
 )
 
+// Errors returned while parsing a [DID].
 var (
-	ErrInvalidDID           = errors.New("invalid DID")
+	ErrNotDID               = errors.New("not a DID")
 	ErrUnsupportedDIDMethod = errors.New("unsupported DID method")
+	// ErrCannotParseDID is returned by [ParseDID] if an error occurs.
+	ErrCannotParseDID = errors.New("cannot parse DID")
 )
 
 // DID represents a DID in the context of the ATProto.
@@ -144,35 +148,32 @@ func (d *DID) UnmarshalJSON(b []byte) error {
 
 // ParseDID in the raw string given.
 //
-// Returns [ErrInvalidDID] is the DID is not a valid ATProto [DID].
+// Returns [ErrNotDID] is the DID is not a valid ATProto [DID].
 // Returns [ErrUnsupportedDIDMethod] if the [DIDMethod] is not supported.
 //
 // See [DIDWeb] and [DIDPlc] for supported [DIDMethod].
 func ParseDID(raw string) (*DID, error) {
 	parts := strings.SplitN(raw, ":", 3)
-	if len(parts) < 3 {
-		return nil, ErrInvalidDID
-	}
-	if parts[0] != "did" {
-		return nil, ErrInvalidDID
+	if len(parts) < 3 || parts[0] != "did" {
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseDID, ErrNotDID)
 	}
 	var d DID
 	var ok bool
 	d.Method, ok = asDIDMethod(parts[1])
 	if !ok {
-		return nil, ErrInvalidDID
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseDID, ErrNotDID)
 	}
 	switch d.Method {
 	case DIDWeb, DIDPlc:
 	default:
-		return nil, ErrUnsupportedDIDMethod
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseDID, ErrUnsupportedDIDMethod)
 	}
 	d.Identifier = parts[2]
 	if !regexpDidIdentifier.MatchString(d.Identifier) {
-		return nil, ErrInvalidDID
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseDID, ErrNotDID)
 	}
 	if len([]rune(d.Identifier)) > DIDIdentifierMaxLength {
-		return nil, ErrInvalidDID
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseDID, ErrNotDID)
 	}
 	return &d, nil
 }

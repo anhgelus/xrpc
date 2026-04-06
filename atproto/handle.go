@@ -16,6 +16,14 @@ const HandleInvalid Handle = "handle.invalid"
 
 const HandleMaxLength = 253
 
+// Errors returned while parsing a [Handle].
+var (
+	ErrNotHandle = errors.New("not a handle")
+	// ErrCannotParseHandle is returned by [ParseHandle] if an error occurs.
+	ErrCannotParseHandle = errors.New("cannot parse handle")
+)
+
+// Errors returned while fetching/verifying [Handle].
 var (
 	ErrInvalidHandle       = errors.New("invalid handle")
 	ErrHandleNotFound      = errors.New("handle not found")
@@ -29,22 +37,22 @@ type Handle string
 
 // ParseHandle in the raw string given.
 //
-// Returns [ErrInvalidHandle] if the [Handle] is invalid.
+// Returns [ErrNotHandle] if the [Handle] is invalid.
 func ParseHandle(raw string) (Handle, error) {
 	parts := strings.Split(raw, ".")
 	if len(parts) < 2 {
-		return "", ErrInvalidHandle
+		return "", fmt.Errorf("%w: %w", ErrCannotParseHandle, ErrNotHandle)
 	}
 	if !regexpNSIDSegment.MatchString(parts[0]) {
-		return "", ErrInvalidHandle
+		return "", fmt.Errorf("%w: %w", ErrCannotParseHandle, ErrNotHandle)
 	}
 	for i, p := range parts[1:] {
 		if !regexpNSIDSegment.MatchString(p) {
-			return "", ErrInvalidHandle
+			return "", fmt.Errorf("%w: %w", ErrCannotParseHandle, ErrNotHandle)
 		}
 		if i == len(parts)-2 {
 			if p[0] >= '0' && p[0] <= '9' {
-				return "", ErrInvalidHandle
+				return "", fmt.Errorf("%w: %w", ErrCannotParseHandle, ErrNotHandle)
 			}
 			switch p {
 			case "local",
@@ -55,7 +63,7 @@ func ParseHandle(raw string) (Handle, error) {
 				"example",
 				"onion",
 				"alt":
-				return "", ErrInvalidHandle
+				return "", fmt.Errorf("%w: %w", ErrCannotParseHandle, ErrNotHandle)
 			}
 		}
 	}

@@ -4,17 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 )
 
 var ErrCannotFindPDS = errors.New("cannot find PDS")
 
-var ErrInvalidURI = errors.New("invalid AT URI")
+// Errors returned while parsing an AT [URI].
+var (
+	ErrNotURI = errors.New("not an AT URI")
+	// ErrCannotParseURI is returned by [ParseRawURI] and [ParseURI] if an error occurs.
+	ErrCannotParseURI = errors.New("cannot parse URI")
+)
 
 // RawURI is an [URI] not validated.
 //
-// Use [RawURI.IsDID] and [RawURI.IsHandle] to determine the type.
-// Use [RawURI.URI] and [RawURI.Handle] to get the [URI].
+// Use [RawURI.URI] to get the [URI].
 //
 // See [ParseRawURI] to parse a [RawURI] from a string.
 type RawURI struct {
@@ -23,7 +28,7 @@ type RawURI struct {
 
 // ParseRawURI in the raw given string.
 //
-// Returns [ErrInvalidURI] if the begining of the [RawURI] is invalid.
+// Returns [ErrNotURI] if the begining of the [RawURI] is invalid.
 // It doesn't verify the syntax.
 //
 // See [RawURI.URI] to verify the syntax.
@@ -31,7 +36,7 @@ func ParseRawURI(raw string) (uri RawURI, err error) {
 	uri.raw = raw
 	b, raw, ok := strings.Cut(raw, "at://")
 	if !ok || b != "" {
-		err = ErrInvalidURI
+		err = fmt.Errorf("%w: %w", ErrCannotParseURI, ErrNotURI)
 		return
 	}
 	return
@@ -81,18 +86,23 @@ func NewURI(authority *DID, collection *NSID, rkey RecordKey) URI {
 
 // ParseURI in the raw given string.
 //
-// Returns [ErrInvalidURI] if the [URI] is invalid.
+// Returns [ErrNotURI] if the [URI] is invalid.
 // Returns [ErrCannotParseURIAs] if the [URI] is not compatible with the provided kind.
 func ParseURI(ctx context.Context, dir Directory, raw string) (uri URI, err error) {
 	// parsing authority
 	b, raw, ok := strings.Cut(raw, "at://")
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("%w: %w", ErrCannotParseURI, err)
+		}
+	}()
 	if !ok || b != "" {
-		err = ErrInvalidURI
+		err = ErrNotURI
 		return
 	}
 	authority, next, ok := strings.Cut(raw, "/")
 	if ok && next == "" {
-		err = ErrInvalidURI
+		err = ErrNotURI
 		return
 	}
 	defer func() {
@@ -120,7 +130,7 @@ func ParseURI(ctx context.Context, dir Directory, raw string) (uri URI, err erro
 	// parsing collection
 	parts := strings.Split(next, "/")
 	if len(parts) > 2 {
-		err = ErrInvalidURI
+		err = ErrNotURI
 		return
 	}
 	uri.collection, err = ParseNSID(parts[0])

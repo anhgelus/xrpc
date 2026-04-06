@@ -3,6 +3,7 @@ package atproto
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -59,8 +60,11 @@ func (n *NSID) MarshalMap() (any, error) {
 	return n.String(), nil
 }
 
+// Errors returned while parsing a [NSID].
 var (
-	ErrInvalidNSID = errors.New("invalid NSID")
+	ErrNotNSID = errors.New("not a NSID")
+	// ErrCannotParseNSID is returned by [ParseNSID] if an error occurs.
+	ErrCannotParseNSID = errors.New("cannot parse NSID")
 )
 
 var (
@@ -72,20 +76,20 @@ const NSIDMaxLength = 253
 
 // ParseNSID in the raw string given.
 //
-// Returns [ErrInvalidNSID] if the [NSID] is invalid.
+// Returns [ErrNotNSID] if the [NSID] is invalid.
 //
 // See [NSIDBuilder] to create dynamically a [NSID].
 func ParseNSID(raw string) (*NSID, error) {
 	parts := strings.Split(raw, ".")
 	if len(parts) < 3 {
-		return nil, ErrInvalidNSID
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseNSID, ErrNotNSID)
 	}
 	tld := parts[0]
 	if !regexpNSIDSegment.MatchString(tld) {
-		return nil, ErrInvalidNSID
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseNSID, ErrNotNSID)
 	}
 	if tld[0] >= '0' && tld[0] <= '9' {
-		return nil, ErrInvalidNSID
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseNSID, ErrNotNSID)
 	}
 	var nsid NSID
 	var sb strings.Builder
@@ -93,12 +97,12 @@ func ParseNSID(raw string) (*NSID, error) {
 	for i, p := range parts[1:] {
 		if i == len(parts)-2 {
 			if !regexpNSIDName.MatchString(p) {
-				return nil, ErrInvalidNSID
+				return nil, fmt.Errorf("%w: %w", ErrCannotParseNSID, ErrNotNSID)
 			}
 			nsid.Name = p
 		} else {
 			if !regexpNSIDSegment.MatchString(p) {
-				return nil, ErrInvalidNSID
+				return nil, fmt.Errorf("%w: %w", ErrCannotParseNSID, ErrNotNSID)
 			}
 			sb.WriteRune('.')
 			sb.WriteString(p)
@@ -106,7 +110,7 @@ func ParseNSID(raw string) (*NSID, error) {
 	}
 	nsid.Authority = sb.String()
 	if len(nsid.Authority) > NSIDMaxLength {
-		return nil, ErrInvalidNSID
+		return nil, fmt.Errorf("%w: %w", ErrCannotParseNSID, ErrNotNSID)
 	}
 	nsid.Authority = strings.ToLower(nsid.Authority)
 	return &nsid, nil

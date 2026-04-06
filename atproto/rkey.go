@@ -3,6 +3,7 @@ package atproto
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 )
 
@@ -11,17 +12,22 @@ type RecordKey string
 
 var regexpRecordKey = regexp.MustCompile(`^[a-zA-Z0-9_~.:-]{1,512}$`)
 
-var ErrInvalidRecordKey = errors.New("invalid record key")
+// Errors returned while parsing a [RecordKey].
+var (
+	ErrNotRecordKey = errors.New("not a record key")
+	// ErrCannotParseRecordKey is returned by [ParseRecordKey] if an error occurs.
+	ErrCannotParseRecordKey = errors.New("cannot parse RecordKey")
+)
 
 // ParseRecordKey in the raw given string.
 //
-// Returns [ErrInvalidRecordKey] if the [RecordKey] is invalid.
+// Returns [ErrNotRecordKey] if the [RecordKey] is invalid.
 func ParseRecordKey(raw string) (RecordKey, error) {
 	if raw == "." || raw == ".." {
-		return "", ErrInvalidRecordKey
+		return "", fmt.Errorf("%w: %w", ErrCannotParseRecordKey, ErrNotRecordKey)
 	}
 	if !regexpRecordKey.MatchString(raw) {
-		return "", ErrInvalidRecordKey
+		return "", fmt.Errorf("%w: %w", ErrCannotParseRecordKey, ErrNotRecordKey)
 	}
 	return RecordKey(raw), nil
 }

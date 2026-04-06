@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4.0
+
+Breaking change:
+- rename `atproto.ErrInvalid...` into `atproto.ErrNot...`
+
+New features:
+- simplify errors handling
+
 ## v0.3.0
 
 Breaking change:

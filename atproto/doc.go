@@ -14,4 +14,15 @@
 // You can use a [RawURI] to avoid this (like in unmarshaled struct), but it does not perform any checks.
 //
 // To create [TID], we strongly encourage you to use [TIDGenerator] to generates [TID] that always increase.
+//
+// # Errors
+//
+// You can use [ErrCannotParse] to check if there is an error while parsing arguments.
+//
+//	var err error
+//	if errors.Is(err, atproto.ErrCannotParse{}) {
+//	  // err is a ErrCannotParse
+//	}
+//
+// You can use [AsCannotParse] to converts into an [ErrCannotParse].
 package atproto
