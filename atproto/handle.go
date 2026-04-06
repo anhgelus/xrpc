@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // HandleInvalid is a standard way to display an invalid [Handle].
@@ -94,36 +93,14 @@ func (h Handle) MarshalMap() (any, error) {
 }
 
 func (h Handle) did(ctx context.Context, client *http.Client, resolver *net.Resolver) (*DID, error) {
-	ctx2, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	ch := make(chan *DID)
-
-	var err error
-	go func() {
-		res, err := resolver.LookupTXT(ctx, "_atproto."+h.String())
-		if err != nil {
-			ch <- nil
-			return
-		}
+	res, err := resolver.LookupTXT(ctx, "_atproto."+h.String())
+	if err == nil {
 		did, e := parseDidTxtRec(res)
+		if e == nil {
+			return did, nil
+		}
 		if !errors.Is(e, ErrHandleNotFound) {
 			err = fmt.Errorf("cannot resolve via DNS records: %w", ErrCannotResolveHandle)
-		}
-		// avoid blocking goroutine
-		select {
-		case <-ctx2.Done():
-		default:
-			ch <- did
-		}
-	}()
-
-	select {
-	case <-ctx2.Done():
-		err = fmt.Errorf("cannot resolve via DNS records: %w", ctx2.Err())
-	case did := <-ch:
-		if did != nil {
-			return did, nil
 		}
 	}
 

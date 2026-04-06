@@ -75,7 +75,6 @@ func (d *DID) document(ctx context.Context, client *http.Client) (*DIDDocument, 
 		}
 		target = "https://" + target + "/did.json"
 		req, err := http.NewRequest(http.MethodGet, target, nil)
-
 		if err != nil {
 			return nil, err
 		}
@@ -114,7 +113,10 @@ func (d *DID) document(ctx context.Context, client *http.Client) (*DIDDocument, 
 			if err != nil {
 				return nil, fmt.Errorf("cannot unmarshal ErrDidPlcResolve: %w", err)
 			}
+			e.StatusCode = resp.StatusCode
 			return nil, e
+		} else if resp.StatusCode >= 400 {
+			return nil, fmt.Errorf("unknown PLC error status code: %s (status code: %d)", b, resp.StatusCode)
 		}
 		var d DIDDocument
 		err = json.Unmarshal(b, &d)
