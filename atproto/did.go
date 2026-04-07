@@ -234,9 +234,9 @@ func (e ErrDIDPlcResolve) Error() string {
 }
 
 func (e ErrDIDPlcResolve) Is(err error) bool {
-	switch err.(type) {
+	switch v := err.(type) {
 	case ErrDIDPlcResolve:
-		return true
+		return e.StatusCode == v.StatusCode
 	case ErrDIDNotFound:
 		return e.StatusCode == http.StatusNotFound
 	default:
@@ -245,12 +245,16 @@ func (e ErrDIDPlcResolve) Is(err error) bool {
 }
 
 func (e ErrDIDPlcResolve) As(target any) bool {
-	v, ok := target.(*ErrDIDNotFound)
-	if !ok || e.StatusCode == http.StatusNotFound {
+	switch v := target.(type) {
+	case *ErrDIDNotFound:
+		if !e.Is(*v) {
+			return false
+		}
+		*v = ErrDIDNotFound{e}
+		return true
+	default:
 		return false
 	}
-	*v = ErrDIDNotFound{e}
-	return true
 }
 
 // ErrDIDWebResolve is an error returned by the [DIDPlcDirectory].
@@ -269,9 +273,9 @@ func (e ErrDIDWebResolve) Error() string {
 }
 
 func (e ErrDIDWebResolve) Is(err error) bool {
-	switch err.(type) {
+	switch v := err.(type) {
 	case ErrDIDWebResolve:
-		return true
+		return e.StatusCode == v.StatusCode
 	case ErrDIDNotFound:
 		return e.StatusCode == http.StatusNotFound
 	default:
@@ -280,10 +284,14 @@ func (e ErrDIDWebResolve) Is(err error) bool {
 }
 
 func (e ErrDIDWebResolve) As(target any) bool {
-	v, ok := target.(*ErrDIDNotFound)
-	if !ok || e.StatusCode == http.StatusNotFound {
+	switch v := target.(type) {
+	case *ErrDIDNotFound:
+		if !e.Is(*v) {
+			return false
+		}
+		*v = ErrDIDNotFound{e}
+		return true
+	default:
 		return false
 	}
-	*v = ErrDIDNotFound{e}
-	return true
 }

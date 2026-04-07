@@ -32,11 +32,6 @@ func (err ErrDIDNotFound) Unwrap() error {
 	return err.inner
 }
 
-func (err ErrDIDNotFound) Is(e error) bool {
-	_, ok := e.(ErrDIDNotFound)
-	return ok
-}
-
 func handleHTTPError(err error, notFoundErr error) error {
 	var dns *net.DNSError
 	if errors.As(err, &dns) && dns.IsNotFound {

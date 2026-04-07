@@ -119,6 +119,8 @@ func (c *BaseClient) NewRequest() RequestBuilder {
 }
 
 // ErrStandard is an error defined in the lexicon.
+//
+// Obtained from [ErrStandardResponse].
 type ErrStandard string
 
 func (e ErrStandard) Error() string {
@@ -131,6 +133,8 @@ func (e ErrStandard) Error() string {
 //
 //	var err ErrStandardResponse
 //	errors.Is(err, xrpc.ErrRecordNotFound)
+//
+// You can get the [ErrStandard] with [errors.Unwrap] or with [errors.As].
 //
 // Obtained from [ErrResponse].
 type ErrStandardResponse struct {
@@ -150,12 +154,24 @@ func (r ErrStandardResponse) Unwrap() error {
 }
 
 func (r ErrStandardResponse) Is(err error) bool {
-	std, ok := err.(ErrStandard)
-	if !ok {
-		e, ok := err.(ErrStandardResponse)
-		return ok && e.ErrorKind == r.ErrorKind
+	switch v := err.(type) {
+	case ErrStandard:
+		return r.ErrorKind == string(v)
+	case ErrStandardResponse:
+		return r.ErrorKind == v.ErrorKind
+	default:
+		return false
 	}
-	return r.ErrorKind == string(std)
+}
+
+func (r ErrStandardResponse) As(target any) bool {
+	switch v := target.(type) {
+	case *ErrStandard:
+		*v = ErrStandard(r.ErrorKind)
+		return true
+	default:
+		return false
+	}
 }
 
 // ErrResponse is returned by a [Client] when an [http.Response] contains a status code >= 400.
@@ -169,15 +185,19 @@ type ErrResponse struct {
 }
 
 func (r ErrResponse) As(target any) bool {
-	v, ok := target.(*ErrStandardResponse)
-	if !ok || r.Content == nil {
+	switch v := target.(type) {
+	case *ErrStandardResponse:
+		if r.Content == nil {
+			return false
+		}
+		err := json.Unmarshal(r.Content, v)
+		if err != nil {
+			return false
+		}
+		return len(v.ErrorKind) > 0
+	default:
 		return false
 	}
-	err := json.Unmarshal(r.Content, v)
-	if err != nil {
-		return false
-	}
-	return len(v.ErrorKind) > 0
 }
 
 func (r ErrResponse) Error() string {

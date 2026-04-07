@@ -27,7 +27,8 @@
 // You can use [ErrDIDNotFound] to check if the [DID] was not found:
 //
 //	var err error
-//	if errors.Is(err, atproto.ErrDIDNotFound{}) {
+//	var didNotFound ErrDIDNotFound
+//	if errors.As(err, &didNotFound) {
 //	  // err comes from a DID that does not exist
 //	}
 package atproto
