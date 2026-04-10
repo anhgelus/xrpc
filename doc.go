@@ -2,19 +2,20 @@
 //
 // The [Client] can be used to perform [Client.Query] and [Client.Procedure].
 // This returns an [ErrResponse] if the status code is invalid.
-// If the API returns a standard error response, you can use [ErrStandardResponse] to retrieve it:
+//
+// # Errors
+//
+// [ErrResponse] is a generic error returned by the [Client]: it contains the response's status code and body.
+// It can be converted into an [ErrStandardResponse] with [errors.As] if the API returns a standard error response:
 //
 //	var err xrpc.ErrResponse
-//	e, ok := errors.AsType[xrpc.ErrStandardResponse](err)
-//	if ok {
+//	if e, ok := errors.AsType[xrpc.ErrStandardResponse](err); ok {
 //	  // e is a valid ErrStandardResponse
 //	}
 //
-// Then, you can check standard errors with [ErrStandard]:
-//
-//	if errors.Is(e, xrpc.ErrRecordNotFound) {
-//	  // record not found
-//	}
+// An [ErrStandardResponse] wraps an [ErrStandard] (defined by the lexicon) and a specific message.
+// The [ErrStandard] contained can be checked with [errors.Is], got with [errors.As] and unwrapped with [errors.Unwrap].
+// You can directly check the [ErrStandard] on [ErrResponse] with [errors.Is] and [errors.As].
 //
 // The [ErrStandardResponse] already wraps the [ErrStandard]: you can use [errors.Unwrap] to get it.
 //

@@ -195,6 +195,21 @@ func (r ErrResponse) As(target any) bool {
 			return false
 		}
 		return len(v.ErrorKind) > 0
+	case *ErrStandard:
+		var t ErrStandardResponse
+		return errors.As(r, &t) && errors.As(t, v)
+	default:
+		return false
+	}
+}
+
+func (r ErrResponse) Is(err error) bool {
+	switch v := err.(type) {
+	case ErrResponse:
+		return r.StatusCode == v.StatusCode
+	case ErrStandard:
+		var conv ErrStandard
+		return errors.As(r, &conv) && errors.Is(conv, err)
 	default:
 		return false
 	}
