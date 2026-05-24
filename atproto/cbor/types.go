@@ -13,14 +13,14 @@ const (
 	simpleValues majorType = 0b111
 )
 
-type additionalType byte
+type additionalInformation byte
 
 const (
-	nextUint8        additionalType = 0b11000
-	nextUint16       additionalType = 0b11001
-	nextUint32       additionalType = 0b11010
-	nextUint64       additionalType = 0b11011
-	indefiniteLength additionalType = 0b11111
+	nextUint8        additionalInformation = 0b11000
+	nextUint16       additionalInformation = 0b11001
+	nextUint32       additionalInformation = 0b11010
+	nextUint64       additionalInformation = 0b11011
+	indefiniteLength additionalInformation = 0b11111
 )
 
 type Tag interface {

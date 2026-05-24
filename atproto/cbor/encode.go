@@ -18,7 +18,7 @@ var (
 	ErrInvalidMap        = errors.New("invalid map")
 )
 
-func createType(major majorType, additional additionalType) byte {
+func createType(major majorType, additional additionalInformation) byte {
 	if additional >= 1<<5 {
 		panic("overflow: additional is too big")
 	}
@@ -51,7 +51,7 @@ func Marshal(v any) ([]byte, error) {
 	case reflect.Uint:
 		return marshalRawInt(unsignedInt, ref.Uint()), nil
 	case reflect.Bool:
-		var b additionalType = 20
+		var b additionalInformation = 20
 		if ref.Bool() {
 			b += 1
 		}
@@ -122,7 +122,7 @@ func marshalBytes(t majorType, sl []byte) ([]byte, error) {
 
 func marshalRawInt(t majorType, i uint64) []byte {
 	if i <= 23 {
-		return []byte{createType(t, additionalType(i))}
+		return []byte{createType(t, additionalInformation(i))}
 	}
 	if i <= math.MaxUint8 {
 		return []byte{createType(t, nextUint8), byte(i)}
