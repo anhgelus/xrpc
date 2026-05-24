@@ -51,3 +51,36 @@ func TestMarshal_String(t *testing.T) {
 	doMarshal(t, "IETF", []byte{0x64, 0x49, 0x45, 0x54, 0x46})
 	doMarshal(t, "ü", []byte{0x62, 0xc3, 0xbc})
 }
+
+func TestMarshal_Map(t *testing.T) {
+	doMarshal(t, map[string]any{}, []byte{0xa0})
+	doMarshal(t, map[string]int{"a": 1}, []byte{0xa1, 0x61, 0x61, 0x01})
+	doMarshal(t, map[string]int{"a": 1, "b": 2}, []byte{0xa2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x02})
+}
+
+func doMarshalStruct(t *testing.T, v any, exp map[string]any) {
+	mp, err := Marshal(exp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doMarshal(t, v, mp)
+}
+
+func TestMarshal_Struct(t *testing.T) {
+	doMarshalStruct(t, struct {
+		A uint
+		B uint `json:"b"`
+		C uint `json:"d" cbor:"c"`
+	}{0, 1, 2}, map[string]any{"A": 0, "b": 1, "c": 2})
+	doMarshalStruct(t, struct {
+		A uint `cbor:",omitempty"`
+		B uint `json:"b,omitempty"`
+		C uint `cbor:"c,string"`
+	}{0, 0, 2}, map[string]any{"c": "2"})
+	doMarshalStruct(t, struct {
+		A uint `cbor:"a,omitempty,string"`
+	}{0}, map[string]any{})
+	doMarshalStruct(t, struct {
+		A uint `cbor:"a,omitempty,string"`
+	}{1}, map[string]any{"a": "1"})
+}
