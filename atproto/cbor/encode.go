@@ -18,29 +18,6 @@ var (
 	ErrInvalidMap        = errors.New("invalid map")
 )
 
-type majorType byte
-
-const (
-	unsignedInt majorType = 0b000
-	negativeInt majorType = 0b001
-	byteString  majorType = 0b010
-	textString  majorType = 0b011
-	array       majorType = 0b100
-	mapT        majorType = 0b101
-	// tag is not supported by atproto
-	simpleValues majorType = 0b111
-)
-
-type additionalType byte
-
-const (
-	nextUint8        additionalType = 0b11000
-	nextUint16       additionalType = 0b11001
-	nextUint32       additionalType = 0b11010
-	nextUint64       additionalType = 0b11011
-	indefiniteLength additionalType = 0b11111
-)
-
 func createType(major majorType, additional additionalType) byte {
 	if additional >= 1<<5 {
 		panic("overflow: additional is too big")
@@ -54,8 +31,11 @@ type Marshaler interface {
 
 func Marshal(v any) ([]byte, error) {
 	if v != nil {
-		if cv, ok := v.(Marshaler); ok {
+		switch cv := v.(type) {
+		case Marshaler:
 			return cv.MarshalCBOR()
+		case Tag:
+			return MarshalTag(cv)
 		}
 	}
 	ref := reflect.ValueOf(v)
