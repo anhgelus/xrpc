@@ -73,6 +73,7 @@ func Marshal(v any) ([]byte, error) {
 			}
 			b = append(b, val...)
 		}
+		return b, nil
 	case reflect.Pointer:
 		if ref.IsNil() {
 			return []byte{createType(simpleValues, 22)}, nil
@@ -112,7 +113,7 @@ func Marshal(v any) ([]byte, error) {
 		}
 		return b, nil
 	}
-	return nil, fmt.Errorf("%w: %T", ErrUnsupportedType, v)
+	return nil, fmt.Errorf("%w: %T (kind: %v)", ErrUnsupportedType, v, ref.Kind())
 }
 
 func marshalBytes(t majorType, sl []byte) ([]byte, error) {

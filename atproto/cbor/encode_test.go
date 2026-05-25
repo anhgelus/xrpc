@@ -52,6 +52,12 @@ func TestMarshal_String(t *testing.T) {
 	doMarshal(t, "ü", []byte{0x62, 0xc3, 0xbc})
 }
 
+func TestMarshal_Array(t *testing.T) {
+	doMarshal(t, []bool{}, []byte{0x80})
+	doMarshal(t, []int{1, 2, 3}, []byte{0x83, 0x01, 0x02, 0x03})
+	doMarshal(t, []bool{true, false}, []byte{0x82, 0xf5, 0xf4})
+}
+
 func TestMarshal_Map(t *testing.T) {
 	doMarshal(t, map[string]any{}, []byte{0xa0})
 	doMarshal(t, map[string]int{"a": 1}, []byte{0xa1, 0x61, 0x61, 0x01})
