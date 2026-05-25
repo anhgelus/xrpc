@@ -3,6 +3,7 @@ package jetsream
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/url"
 	"strconv"
 
@@ -24,13 +25,15 @@ type Option struct {
 type Feed struct {
 	conn   *websocket.Conn
 	closer context.CancelFunc
+	url    string
 	// Last Cursor sent by the server.
 	Cursor   uint
 	Listener <-chan Event
+	sender   chan<- Event
 }
 
 // Connect to the [Feed] with the given [url.URL] and the given [Option].
-func Connect(ctx context.Context, u *url.URL, opt *Option) (*Feed, error) {
+func Connect(ctx context.Context, u *url.URL, log *slog.Logger, opt *Option) (*Feed, error) {
 	u.Scheme = "wss"
 	q := u.Query()
 	for _, c := range opt.Collections {
@@ -45,28 +48,73 @@ func Connect(ctx context.Context, u *url.URL, opt *Option) (*Feed, error) {
 	if opt.Cursor > 0 {
 		q.Add("cursor", strconv.Itoa(int(opt.Cursor)))
 	}
-	conn, _, err := websocket.Dial(ctx, u.String(), nil)
-	if err != nil {
-		return nil, err
+	target := u.String()
+	f := &Feed{url: target}
+	return f, f.Reconnect(ctx, log)
+}
+
+func (f *Feed) Disconnect(ctx context.Context, code websocket.StatusCode, msg string) error {
+	f.closer()
+	close(f.sender)
+	f.Listener = nil
+	return f.conn.Close(code, msg)
+}
+
+func (f *Feed) Reconnect(ctx context.Context, log *slog.Logger) error {
+	if f.Listener != nil {
+		log.Info("disconnecting...")
+		err := f.Disconnect(ctx, websocket.StatusServiceRestart, "reconnecting")
+		if err != nil {
+			log.Error("disconnected", "error", err)
+		} else {
+			log.Info("disconnected")
+		}
 	}
+	log.Info("connecting...", "url", f.url)
+	conn, _, err := websocket.Dial(ctx, f.url, nil)
+	if err != nil {
+		return err
+	}
+	log.Info("connected")
 	l := make(chan Event, 1)
-	f := &Feed{conn: conn, Listener: l}
+	f.conn = conn
+	f.Listener = l
+	f.sender = l
 	var ctxL context.Context
 	ctxL, f.closer = context.WithCancel(ctx)
-	go func(ctx context.Context, f *Feed, l chan<- Event) {
-		_, b, err := conn.Read(ctx)
-		if err != nil {
-			panic(err)
+	go read(ctxL, log, f)
+	return nil
+}
+
+func read(ctx context.Context, log *slog.Logger, f *Feed) {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("exiting: context finished")
+			return
+		default:
+			_, b, err := f.conn.Read(ctx)
+			if err != nil {
+				log.Error("reading websocket", "error", err)
+				log.Warn("disconnecting...")
+				err = f.Disconnect(ctx, websocket.StatusProtocolError, "cannot read data")
+				if err != nil {
+					log.Error("disconnected", "error", err)
+				} else {
+					log.Info("disconnected")
+				}
+				return
+			}
+			var e Event
+			err = json.Unmarshal(b, &e)
+			if err != nil {
+				log.Error("cannot unmarshal event", "error", err, "raw", b)
+				continue
+			}
+			f.Cursor = uint(e.TimeUs)
+			f.sender <- e
 		}
-		var e Event
-		err = json.Unmarshal(b, &e)
-		if err != nil {
-			panic(err)
-		}
-		f.Cursor = uint(e.TimeUs)
-		l <- e
-	}(ctxL, f, l)
-	return f, nil
+	}
 }
 
 type SubscriberSourcedMessage interface {
