@@ -16,17 +16,17 @@ const (
 	AccountKind  = "account"
 )
 
-// EventBase is the data shared in every event.
-type EventBase struct {
+// Event for [CommitKind].
+type Event struct {
 	Kind   Kind         `json:"kind"`
 	TimeUs uint64       `json:"time_us"`
 	DID    *atproto.DID `json:"did"`
-}
-
-// EventCommit is an event for [CommitKind].
-type EventCommit struct {
-	EventBase
-	Commit *Commit `json:"commit"`
+	// Nil if [Kind] is not [CommitKind].
+	Commit *Commit `json:"commit,omitempty"`
+	// Nil if [Kind] is not [AccountKind].
+	Account *Account `json:"account,omitempty"`
+	// Nil if [Kind] is not [IdentityKind].
+	Identity *Identity `json:"identity,omitempty"`
 }
 
 // Operation described by the [Commit].
@@ -49,24 +49,12 @@ type Commit struct {
 	CID        *atproto.CIDAsString `json:"cid,omitempty"`
 }
 
-// EventAccount is an event for [AccountKind].
-type EventAccount struct {
-	EventBase
-	Account *Account `json:"account"`
-}
-
 type Account struct {
 	Active bool         `json:"active"`
 	DID    *atproto.DID `json:"did"`
 	Seq    int64        `json:"seq"`
 	Status *string      `json:"status,omitempty"`
 	Time   time.Time    `json:"time"`
-}
-
-// EventIdentity is an event for [IdentityKind].
-type EventIdentity struct {
-	EventBase
-	Identity *Identity `json:"identity"`
 }
 
 type Identity struct {

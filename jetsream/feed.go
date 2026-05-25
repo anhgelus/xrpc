@@ -22,9 +22,11 @@ type Option struct {
 
 // Feed is connected to a Jetstream.
 type Feed struct {
-	conn *websocket.Conn
+	conn   *websocket.Conn
+	closer context.CancelFunc
 	// Last Cursor sent by the server.
-	Cursor uint
+	Cursor   uint
+	Listener <-chan Event
 }
 
 // Connect to the [Feed] with the given [url.URL] and the given [Option].
@@ -47,7 +49,24 @@ func Connect(ctx context.Context, u *url.URL, opt *Option) (*Feed, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Feed{conn: conn}, nil
+	l := make(chan Event, 1)
+	f := &Feed{conn: conn, Listener: l}
+	var ctxL context.Context
+	ctxL, f.closer = context.WithCancel(ctx)
+	go func(ctx context.Context, f *Feed, l chan<- Event) {
+		_, b, err := conn.Read(ctx)
+		if err != nil {
+			panic(err)
+		}
+		var e Event
+		err = json.Unmarshal(b, &e)
+		if err != nil {
+			panic(err)
+		}
+		f.Cursor = uint(e.TimeUs)
+		l <- e
+	}(ctxL, f, l)
+	return f, nil
 }
 
 type SubscriberSourcedMessage interface {
