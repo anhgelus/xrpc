@@ -21,19 +21,22 @@ const (
 type additionalInformation byte
 
 const (
-	nextUint8        additionalInformation = 0b11000
-	nextUint16       additionalInformation = 0b11001
-	nextUint32       additionalInformation = 0b11010
-	nextUint64       additionalInformation = 0b11011
-	indefiniteLength additionalInformation = 0b11111
+	nextUint8  additionalInformation = 0b11000
+	nextUint16 additionalInformation = 0b11001
+	nextUint32 additionalInformation = 0b11010
+	nextUint64 additionalInformation = 0b11011
+	//indefiniteLength additionalInformation = 0b11111
 )
 
+// Tag implements a CBOR Tag.
 type Tag interface {
+	// Tag returns the uint of the [Tag].
 	Tag() uint64
+	// Value returns the content of the [Tag].
 	Value() any
 }
 
-func MarshalTag(t Tag) ([]byte, error) {
+func marshalTag(t Tag) ([]byte, error) {
 	in, err := Marshal(t.Value())
 	if err != nil {
 		return nil, err
@@ -78,4 +81,45 @@ func parseTag(tag string) options {
 		}
 	}
 	return opts
+}
+
+// ByteReader is a helper to read bytes.
+type ByteReader struct {
+	Bytes []byte
+	I     uint
+}
+
+// Next returns the next byte.
+// It doesn't perform sanity checks.
+func (r *ByteReader) Next() byte {
+	b := r.Bytes[r.I]
+	r.I++
+	return b
+}
+
+// Consume the current byte without returning it.
+// Returns true if everything was read.
+func (r *ByteReader) Consume() bool {
+	r.I++
+	return int(r.I) < len(r.Bytes)
+}
+
+// More performs multiple calls to [Next].
+func (r *ByteReader) More(i uint) []byte {
+	b := r.Bytes[r.I : r.I+i]
+	r.I += i
+	return b
+}
+
+// Peek return the next byte without consuming it.
+func (r *ByteReader) Peek() byte {
+	return r.Bytes[r.I]
+}
+
+// Drain the remaining bytes and return them.
+func (r *ByteReader) Drain() []byte {
+	if int(r.I) >= len(r.Bytes) {
+		return nil
+	}
+	return r.Bytes[r.I:]
 }

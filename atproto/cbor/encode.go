@@ -24,17 +24,19 @@ func createType(major majorType, additional additionalInformation) byte {
 	return byte(major<<5) + byte(additional)
 }
 
+// Marshaler describes how the type is encoded into CBOR.
 type Marshaler interface {
 	MarshalCBOR() ([]byte, error)
 }
 
+// Marshal a value into CBOR.
 func Marshal(v any) ([]byte, error) {
 	if v != nil {
 		switch cv := v.(type) {
 		case Marshaler:
 			return cv.MarshalCBOR()
 		case Tag:
-			return MarshalTag(cv)
+			return marshalTag(cv)
 		}
 	}
 	ref := reflect.ValueOf(v)

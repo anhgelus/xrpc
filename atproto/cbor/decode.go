@@ -15,50 +15,21 @@ var (
 	ErrNotCBOR                  = errors.New("not a CBOR")
 )
 
-type byteReader struct {
-	bytes []byte
-	i     uint
-}
-
-func (r *byteReader) Next() byte {
-	b := r.bytes[r.i]
-	r.i++
-	return b
-}
-
-func (r *byteReader) Consume() bool {
-	r.i++
-	return int(r.i) < len(r.bytes)
-}
-
-func (r *byteReader) More(i uint) []byte {
-	b := r.bytes[r.i : r.i+i]
-	r.i += i
-	return b
-}
-
-func (r *byteReader) Peek() byte {
-	return r.bytes[r.i]
-}
-
-func (r *byteReader) Drain() []byte {
-	if int(r.i) >= len(r.bytes) {
-		return nil
-	}
-	return r.bytes[r.i:]
-}
-
+// Unmarshaler describes how the type is decoded from CBOR.
 type Unmarshaler interface {
+	// UnmarshalCBOR returns the unparsed bytes.
 	UnmarshalCBOR(b []byte) ([]byte, error)
 }
 
-func extractHead(r *byteReader) (majorType, additionalInformation) {
+func extractHead(r *ByteReader) (majorType, additionalInformation) {
 	b := r.Next()
 	m := b & 0b111_00000
 	a := b & 0b000_11111
 	return majorType(m >> 5), additionalInformation(a)
 }
 
+// Unmarshal a type from CBOR.
+// Returns the unparsed data.
 func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	ref := reflect.ValueOf(v)
 	if ref.Kind() != reflect.Pointer || ref.IsNil() {
@@ -71,7 +42,7 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	case Unmarshaler:
 		return cv.UnmarshalCBOR(b)
 	}
-	r := &byteReader{bytes: b}
+	r := &ByteReader{Bytes: b}
 	m, a := extractHead(r)
 
 	var val any
@@ -167,7 +138,7 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	return r.Drain(), nil
 }
 
-func unmarshalRawUint(a additionalInformation, r *byteReader) (uint64, error) {
+func unmarshalRawUint(a additionalInformation, r *ByteReader) (uint64, error) {
 	if a <= 23 {
 		return uint64(a), nil
 	}
@@ -195,7 +166,7 @@ func unmarshalInt(t reflect.Type, val reflect.Value) (any, error) {
 	return nil, fmt.Errorf("%w: %v is not an (u)int", ErrInvalidType, t.String())
 }
 
-func unmarshalBytes(a additionalInformation, r *byteReader) ([]byte, error) {
+func unmarshalBytes(a additionalInformation, r *ByteReader) ([]byte, error) {
 	ln, err := unmarshalRawUint(a, r)
 	if err != nil {
 		return nil, err
@@ -203,7 +174,7 @@ func unmarshalBytes(a additionalInformation, r *byteReader) ([]byte, error) {
 	return r.More(uint(ln)), nil
 }
 
-func unmarshalArray(val reflect.Value, a additionalInformation, r *byteReader) (any, error) {
+func unmarshalArray(val reflect.Value, a additionalInformation, r *ByteReader) (any, error) {
 	ln, err := unmarshalRawUint(a, r)
 	if err != nil {
 		return nil, err
@@ -211,20 +182,20 @@ func unmarshalArray(val reflect.Value, a additionalInformation, r *byteReader) (
 	t := val.Type().Elem()
 	for range ln {
 		ptr := reflect.New(t)
-		rest, err := Unmarshal(r.bytes[r.i:], ptr.Interface())
+		rest, err := Unmarshal(r.Bytes[r.I:], ptr.Interface())
 		if err != nil {
 			return nil, err
 		}
-		r.bytes = rest
-		r.i = 0
+		r.Bytes = rest
+		r.I = 0
 		val = reflect.Append(val, ptr.Elem())
 	}
 	return val.Interface(), nil
 }
 
-func unmarshalKeyVal(r *byteReader, t reflect.Type) (string, reflect.Value, error) {
+func unmarshalKeyVal(r *ByteReader, t reflect.Type) (string, reflect.Value, error) {
 	var s string
-	rest, err := Unmarshal(r.bytes[r.i:], &s)
+	rest, err := Unmarshal(r.Bytes[r.I:], &s)
 	if err != nil {
 		return "", reflect.ValueOf(nil), err
 	}
@@ -233,8 +204,8 @@ func unmarshalKeyVal(r *byteReader, t reflect.Type) (string, reflect.Value, erro
 	if err != nil {
 		return "", reflect.ValueOf(nil), err
 	}
-	r.bytes = rest
-	r.i = 0
+	r.Bytes = rest
+	r.I = 0
 	return s, ptr.Elem(), err
 }
 
