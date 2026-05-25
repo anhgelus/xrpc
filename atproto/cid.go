@@ -8,13 +8,16 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"tangled.org/anhgelus.world/xrpc/atproto/cbor"
 )
 
 // CIDVersion is the supported [CID] version.
 const CIDVersion uint = 1
 
 var (
-	base32encoding = base32.NewEncoding("abcdefghijklmnopqrstuvwxyz234567").WithPadding(base32.NoPadding)
+	base32encoding = base32.NewEncoding("abcdefghijklmnopqrstuvwxyz234567").
+			WithPadding(base32.NoPadding)
 	base64encoding = base64.StdEncoding.WithPadding(base64.NoPadding)
 )
 
@@ -222,6 +225,14 @@ func (c *CIDLink) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func (c *CIDLink) Tag() uint64 {
+	return 42
+}
+
+func (c *CIDLink) Value() any {
+	return c.CID().AsBytes()
+}
+
 // CIDBytes marshals and unmarshals a [CID] like [CIDLink], but with $bytes instead of $link.
 type CIDBytes CID
 
@@ -237,6 +248,10 @@ func (c *CIDBytes) MarshalMap() (any, error) {
 	return map[string]any{
 		"$bytes": base64encoding.EncodeToString(c.CID().AsBytes()),
 	}, nil
+}
+
+func (c *CIDBytes) MarshalCBOR() ([]byte, error) {
+	return cbor.Marshal(c.CID().AsBytes())
 }
 
 func (c *CIDBytes) UnmarshalJSON(b []byte) error {
@@ -257,4 +272,18 @@ func (c *CIDBytes) UnmarshalJSON(b []byte) error {
 	}
 	*c = CIDBytes(*cid)
 	return nil
+}
+
+func (c *CIDBytes) UnmarshalCBOR(b []byte) ([]byte, error) {
+	var raw []byte
+	rest, err := cbor.Unmarshal(b, &raw)
+	if err != nil {
+		return nil, err
+	}
+	cid, err := ParseCID(raw)
+	if err != nil {
+		return nil, err
+	}
+	*c = CIDBytes(*cid)
+	return rest, nil
 }
