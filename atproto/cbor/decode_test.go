@@ -61,3 +61,9 @@ func TestUnmarshal_Array(t *testing.T) {
 	doUnmarshal(t, []byte{0x83, 0x01, 0x02, 0x03}, []int{1, 2, 3})
 	doUnmarshal(t, []byte{0x82, 0xf5, 0xf4}, []bool{true, false})
 }
+
+func TestUnmarshal_Map(t *testing.T) {
+	doUnmarshal(t, []byte{0xa0}, map[string]any{})
+	doUnmarshal(t, []byte{0xa1, 0x61, 0x61, 0x01}, map[string]int{"a": 1})
+	doUnmarshal(t, []byte{0xa2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x02}, map[string]int{"a": 1, "b": 2})
+}

@@ -74,6 +74,7 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	defer func() {
 		if v := recover(); v != nil {
 			err = fmt.Errorf("%w: %v, for data [% x]", ErrNotCBOR, v, b)
+			panic(err)
 		}
 	}()
 	switch m {
@@ -102,6 +103,29 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	case array:
 		val, err = unmarshalArray(ref.Elem(), a, r)
 	case mapT:
+		if ref.Kind() != reflect.Map {
+			// handle struct
+		}
+		t := ref.Elem().Type()
+		if t.Key().Kind() != reflect.String {
+			return nil, fmt.Errorf("%w: map must use string as keys", ErrInvalidType)
+		}
+		var ln uint64
+		ln, err = unmarshalRawUint(a, r)
+		if err != nil {
+			return
+		}
+		mp := reflect.MakeMapWithSize(t, int(ln))
+		for range ln {
+			var key string
+			var in reflect.Value
+			key, in, err = unmarshalKeyVal(r, t.Elem())
+			if err != nil {
+				return
+			}
+			mp.SetMapIndex(reflect.ValueOf(key), in)
+		}
+		val = mp.Interface()
 	case tag:
 	case simpleValues:
 		switch a {
@@ -168,6 +192,8 @@ func unmarshalInt(kind reflect.Kind, val int64) (any, error) {
 		return int64(val), nil
 	case reflect.Int:
 		return int(val), nil
+	case reflect.Interface:
+		return val, nil
 	}
 	return nil, fmt.Errorf("%w: %v is not an (u)int", ErrInvalidType, kind)
 }
@@ -197,4 +223,20 @@ func unmarshalArray(val reflect.Value, a additionalInformation, r *byteReader) (
 		val = reflect.Append(val, ptr.Elem())
 	}
 	return val.Interface(), nil
+}
+
+func unmarshalKeyVal(r *byteReader, t reflect.Type) (string, reflect.Value, error) {
+	var s string
+	rest, err := Unmarshal(r.bytes[r.i:], &s)
+	if err != nil {
+		return "", reflect.ValueOf(nil), err
+	}
+	ptr := reflect.New(t)
+	rest, err = Unmarshal(rest, ptr.Interface())
+	if err != nil {
+		return "", reflect.ValueOf(nil), err
+	}
+	r.bytes = rest
+	r.i = 0
+	return s, ptr.Elem(), err
 }
