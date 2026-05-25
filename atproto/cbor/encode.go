@@ -9,7 +9,6 @@ import (
 	"math"
 	"reflect"
 	"slices"
-	"strings"
 )
 
 var (
@@ -151,44 +150,6 @@ func marshalKeyVal(key string, val any) ([]byte, error) {
 		return nil, err
 	}
 	return append(b, k...), nil
-}
-
-type options struct {
-	name      string
-	omitempty bool
-	toString  bool
-}
-
-func optionsOf(field reflect.StructField) options {
-	var opts options
-	if tag, ok := field.Tag.Lookup("cbor"); ok {
-		opts = parseTag(tag)
-	} else if tag, ok := field.Tag.Lookup("json"); ok {
-		opts = parseTag(tag)
-	}
-	if opts.name == "" {
-		opts.name = field.Name
-	}
-	return opts
-}
-
-func parseTag(tag string) options {
-	parts := strings.Split(tag, ",")
-	opts := options{name: parts[0]}
-	if len(parts) == 1 {
-		return opts
-	}
-	for _, p := range parts[1:] {
-		switch p {
-		case "omitempty":
-			opts.omitempty = true
-		case "string":
-			opts.toString = true
-		default:
-			panic("unsupported options: " + p)
-		}
-	}
-	return opts
 }
 
 func structToMap(ref reflect.Value) (map[string]any, error) {

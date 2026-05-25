@@ -67,3 +67,38 @@ func TestUnmarshal_Map(t *testing.T) {
 	doUnmarshal(t, []byte{0xa1, 0x61, 0x61, 0x01}, map[string]int{"a": 1})
 	doUnmarshal(t, []byte{0xa2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x02}, map[string]int{"a": 1, "b": 2})
 }
+
+func doUnmarshalStruct[T any](t *testing.T, exp T, v ...any) {
+	if len(v)%2 != 0 {
+		t.Fatal("invalid args")
+	}
+	ln := len(v) / 2
+	cv := make(map[string]any, ln)
+	for i := range ln {
+		cv[v[i*2].(string)] = v[i*2+1]
+	}
+	mp, err := Marshal(cv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doUnmarshal(t, mp, exp)
+}
+
+func TestUnmarshal_Struct(t *testing.T) {
+	doUnmarshalStruct(t, struct {
+		A uint
+		B uint `json:"b"`
+		C uint `json:"d" cbor:"c"`
+	}{0, 1, 2}, "A", 0, "b", 1, "c", 2)
+	doUnmarshalStruct(t, struct {
+		A uint `cbor:",omitempty"`
+		B uint `json:"b,omitempty"`
+		C uint `cbor:"c,string"`
+	}{0, 0, 2}, "c", "2")
+	doUnmarshalStruct(t, struct {
+		A uint `cbor:"a,omitempty,string"`
+	}{0})
+	doUnmarshalStruct(t, struct {
+		A uint `cbor:"a,omitempty,string"`
+	}{1}, "a", "1")
+}

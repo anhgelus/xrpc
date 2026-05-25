@@ -1,5 +1,10 @@
 package cbor
 
+import (
+	"reflect"
+	"strings"
+)
+
 type majorType byte
 
 const (
@@ -35,4 +40,42 @@ func MarshalTag(t Tag) ([]byte, error) {
 	}
 	b := marshalRawInt(tag, t.Tag())
 	return append(b, in...), nil
+}
+
+type options struct {
+	name      string
+	omitempty bool
+	toString  bool
+}
+
+func optionsOf(field reflect.StructField) options {
+	var opts options
+	if tag, ok := field.Tag.Lookup("cbor"); ok {
+		opts = parseTag(tag)
+	} else if tag, ok := field.Tag.Lookup("json"); ok {
+		opts = parseTag(tag)
+	}
+	if opts.name == "" {
+		opts.name = field.Name
+	}
+	return opts
+}
+
+func parseTag(tag string) options {
+	parts := strings.Split(tag, ",")
+	opts := options{name: parts[0]}
+	if len(parts) == 1 {
+		return opts
+	}
+	for _, p := range parts[1:] {
+		switch p {
+		case "omitempty":
+			opts.omitempty = true
+		case "string":
+			opts.toString = true
+		default:
+			panic("unsupported options: " + p)
+		}
+	}
+	return opts
 }
