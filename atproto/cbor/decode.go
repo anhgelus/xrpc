@@ -38,20 +38,22 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	for ref.Elem().Kind() == reflect.Pointer {
 		ref = ref.Elem()
 	}
-	switch cv := v.(type) {
-	case Unmarshaler:
-		return cv.UnmarshalCBOR(b)
-	}
-	r := &ByteReader{Bytes: b}
-	m, a := extractHead(r)
-
-	var val any
 	defer func() {
 		if v := recover(); v != nil {
 			err = fmt.Errorf("%w: %v, for data [% x]", ErrNotCBOR, v, b)
 			panic(err)
 		}
 	}()
+	switch cv := v.(type) {
+	case Unmarshaler:
+		return cv.UnmarshalCBOR(b)
+	case Tag:
+		return unmarshalTag(b, cv)
+	}
+	r := &ByteReader{Bytes: b}
+	m, a := extractHead(r)
+
+	var val any
 	switch m {
 	case unsignedInt:
 		var t uint64
@@ -119,6 +121,7 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 			val, err = unmarshalMapIntoStruct(mp, ref)
 		}
 	case tag:
+		return nil, fmt.Errorf("%w: must use a Tag to decode a tag", ErrInvalidType)
 	case simpleValues:
 		switch a {
 		case 20:
@@ -128,7 +131,7 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 		case 22:
 			return r.Drain(), nil
 		default:
-			err = fmt.Errorf("%w: unknown simple values for data [%x]", ErrNotCBOR, b)
+			err = fmt.Errorf("%w: unknown simple values, for data [% x]", ErrNotCBOR, b)
 		}
 	}
 	if err != nil {

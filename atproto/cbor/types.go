@@ -1,6 +1,7 @@
 package cbor
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -32,17 +33,33 @@ const (
 type Tag interface {
 	// Tag returns the uint of the [Tag].
 	Tag() uint64
-	// Value returns the content of the [Tag].
-	Value() any
+	// Content returns the content of the [Tag].
+	Content() any
+	// Unmarshal the content of the [Tag] with the given number and the remaining bytes.
+	// See [Unmarshaler].
+	UnmarshalCBOR(uint64, *ByteReader) ([]byte, error)
 }
 
 func marshalTag(t Tag) ([]byte, error) {
-	in, err := Marshal(t.Value())
+	in, err := Marshal(t.Content())
 	if err != nil {
 		return nil, err
 	}
 	b := marshalRawInt(tag, t.Tag())
 	return append(b, in...), nil
+}
+
+func unmarshalTag(b []byte, t Tag) ([]byte, error) {
+	r := &ByteReader{Bytes: b}
+	m, a := extractHead(r)
+	if m != tag {
+		return nil, fmt.Errorf("%w: %v is not a tag, for data [% x]", ErrInvalidType, m, b)
+	}
+	v, err := unmarshalRawUint(a, r)
+	if err != nil {
+		return nil, err
+	}
+	return t.UnmarshalCBOR(v, r)
 }
 
 type options struct {

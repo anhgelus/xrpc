@@ -229,8 +229,25 @@ func (c *CIDLink) Tag() uint64 {
 	return 42
 }
 
-func (c *CIDLink) Value() any {
+func (c *CIDLink) Content() any {
 	return c.CID().AsBytes()
+}
+
+func (c *CIDLink) UnmarshalCBOR(tag uint64, r *cbor.ByteReader) ([]byte, error) {
+	if tag != c.Tag() {
+		return nil, fmt.Errorf("%w: tag %d is not a CID link (tag %d)", cbor.ErrInvalidType, tag, c.Tag())
+	}
+	var raw []byte
+	rest, err := cbor.Unmarshal(r.Bytes, &raw)
+	if err != nil {
+		return nil, err
+	}
+	decoded, err := ParseCID(raw)
+	if err != nil {
+		return nil, err
+	}
+	*c = CIDLink(*decoded)
+	return rest, nil
 }
 
 // CIDBytes marshals and unmarshals a [CID] like [CIDLink], but with $bytes instead of $link.
