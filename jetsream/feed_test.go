@@ -35,9 +35,20 @@ func TestFeed_Connect(t *testing.T) {
 	}
 	defer cancel()
 	var lastCursor uint64
+	data := make(map[string]uint, 3)
+	i := 0
 	for e := range f.Listen() {
+		i++
 		lastCursor = e.TimeUs
-		log.Info("event received!", "event", e)
+		data[string(e.Kind)]++
+		if i%500 == 0 {
+			log.Info(
+				"logs got",
+				CommitKind, data[string(CommitKind)],
+				AccountKind, data[string(AccountKind)],
+				IdentityKind, data[string(IdentityKind)],
+			)
+		}
 	}
 	if f.Connected() {
 		t.Error("connected after listening closed")
