@@ -73,12 +73,6 @@ func (f *Feed) Reconnect(ctx context.Context, log *slog.Logger) error {
 			log.Info("disconnected")
 		}
 	}
-	select {
-	case <-ctx.Done():
-		log.Warn("cannot restart", "reason", ctx.Err())
-		return nil
-	default:
-	}
 	if f.Cursor > 0 {
 		q := f.url.Query()
 		q.Set("cursor", strconv.Itoa(int(f.Cursor)))
@@ -86,6 +80,12 @@ func (f *Feed) Reconnect(ctx context.Context, log *slog.Logger) error {
 	}
 	target := f.url.String()
 	log.Info("connecting...", "url", target)
+	select {
+	case <-ctx.Done():
+		log.Warn("cannot restart", "reason", ctx.Err())
+		return nil
+	default:
+	}
 	conn, _, err := websocket.Dial(ctx, target, nil)
 	if err != nil {
 		return err
