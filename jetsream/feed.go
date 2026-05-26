@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/url"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
@@ -18,22 +19,26 @@ type Option struct {
 	Collections         []*atproto.NSID
 	DIDs                []*atproto.DID
 	MaxMessageSizeBytes uint
-	Cursor              uint
+	Cursor              uint64
 }
 
 // Feed is connected to a Jetstream.
 type Feed struct {
-	conn   *websocket.Conn
-	closer context.CancelFunc
-	url    string
+	conn      *websocket.Conn
+	closer    context.CancelFunc
+	url       *url.URL
+	ch        chan Event
+	wait      chan struct{}
+	connected atomic.Bool
 	// Last Cursor sent by the server.
-	Cursor   uint
-	Listener <-chan Event
-	sender   chan<- Event
+	Cursor uint64
 }
 
 // Connect to the [Feed] with the given [url.URL] and the given [Option].
 func Connect(ctx context.Context, u *url.URL, log *slog.Logger, opt *Option) (*Feed, error) {
+	if opt == nil {
+		opt = &Option{}
+	}
 	u.Scheme = "wss"
 	q := u.Query()
 	for _, c := range opt.Collections {
@@ -45,75 +50,105 @@ func Connect(ctx context.Context, u *url.URL, log *slog.Logger, opt *Option) (*F
 	if opt.MaxMessageSizeBytes > 0 {
 		q.Add("maxMessageSizeBytes", strconv.Itoa(int(opt.MaxMessageSizeBytes)))
 	}
-	if opt.Cursor > 0 {
-		q.Add("cursor", strconv.Itoa(int(opt.Cursor)))
-	}
-	target := u.String()
-	f := &Feed{url: target}
+	u.RawQuery = q.Encode()
+	f := &Feed{url: u, Cursor: opt.Cursor}
 	return f, f.Reconnect(ctx, log)
 }
 
-func (f *Feed) Disconnect(ctx context.Context, code websocket.StatusCode, msg string) error {
+func (f *Feed) Disconnect(code websocket.StatusCode, msg string) error {
+	f.connected.Store(false)
 	f.closer()
-	close(f.sender)
-	f.Listener = nil
+	<-f.wait
+	close(f.ch)
 	return f.conn.Close(code, msg)
 }
 
 func (f *Feed) Reconnect(ctx context.Context, log *slog.Logger) error {
-	if f.Listener != nil {
+	if f.Connected() {
 		log.Info("disconnecting...")
-		err := f.Disconnect(ctx, websocket.StatusServiceRestart, "reconnecting")
+		err := f.Disconnect(websocket.StatusServiceRestart, "reconnecting")
 		if err != nil {
 			log.Error("disconnected", "error", err)
 		} else {
 			log.Info("disconnected")
 		}
 	}
-	log.Info("connecting...", "url", f.url)
-	conn, _, err := websocket.Dial(ctx, f.url, nil)
+	select {
+	case <-ctx.Done():
+		log.Warn("cannot restart", "reason", ctx.Err())
+		return nil
+	default:
+	}
+	if f.Cursor > 0 {
+		q := f.url.Query()
+		q.Set("cursor", strconv.Itoa(int(f.Cursor)))
+		f.url.RawQuery = q.Encode()
+	}
+	target := f.url.String()
+	log.Info("connecting...", "url", target)
+	conn, _, err := websocket.Dial(ctx, target, nil)
 	if err != nil {
 		return err
 	}
 	log.Info("connected")
-	l := make(chan Event, 1)
 	f.conn = conn
-	f.Listener = l
-	f.sender = l
+	f.ch = make(chan Event, 1)
+	f.wait = make(chan struct{})
 	var ctxL context.Context
 	ctxL, f.closer = context.WithCancel(ctx)
 	go read(ctxL, log, f)
+	f.connected.Store(true)
 	return nil
+}
+
+func (f *Feed) Connected() bool {
+	return f.connected.Load()
+}
+
+func (f *Feed) Listen() <-chan Event {
+	return f.ch
 }
 
 func read(ctx context.Context, log *slog.Logger, f *Feed) {
 	for {
+		_, b, err := f.conn.Read(ctx)
 		select {
 		case <-ctx.Done():
-			log.Info("exiting: context finished")
-			return
-		default:
-			_, b, err := f.conn.Read(ctx)
-			if err != nil {
-				log.Error("reading websocket", "error", err)
-				log.Warn("disconnecting...")
-				err = f.Disconnect(ctx, websocket.StatusProtocolError, "cannot read data")
-				if err != nil {
-					log.Error("disconnected", "error", err)
-				} else {
-					log.Info("disconnected")
-				}
+			if !f.Connected() {
+				close(f.wait)
 				return
 			}
-			var e Event
-			err = json.Unmarshal(b, &e)
+			close(f.wait)
+			log.Info("disconnecting: context finished")
+			err = f.Disconnect(websocket.StatusNormalClosure, "good bye :3")
 			if err != nil {
-				log.Error("cannot unmarshal event", "error", err, "raw", b)
-				continue
+				log.Error("disconnected", "error", err)
+			} else {
+				log.Info("disconnected")
 			}
-			f.Cursor = uint(e.TimeUs)
-			f.sender <- e
+			return
+		default:
 		}
+		if err != nil {
+			log.Error("reading websocket", "error", err)
+			log.Warn("disconnecting...")
+			close(f.wait)
+			err = f.Disconnect(websocket.StatusProtocolError, "cannot read data")
+			if err != nil {
+				log.Error("disconnected", "error", err)
+			} else {
+				log.Info("disconnected")
+			}
+			return
+		}
+		var e Event
+		err = json.Unmarshal(b, &e)
+		if err != nil {
+			log.Error("cannot unmarshal event", "error", err, "raw", b)
+			continue
+		}
+		f.Cursor = e.TimeUs
+		f.ch <- e
 	}
 }
 
