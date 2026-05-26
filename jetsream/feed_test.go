@@ -15,11 +15,11 @@ func genBase(ctx context.Context, log *slog.Logger) (*Feed, error) {
 	if err != nil {
 		return nil, err
 	}
-	f, err := Connect(ctx, u, log, nil)
+	f, err := New(log, u, nil)
 	if err != nil {
 		return nil, err
 	}
-	return f, nil
+	return f, f.Connect(ctx, nil)
 }
 
 func TestFeed_Connect(t *testing.T) {
@@ -78,7 +78,7 @@ func TestFeed_Reconnect(t *testing.T) {
 		case <-f.Listen():
 			i++
 			if i%500 == 0 {
-				err = f.Reconnect(ctx, log)
+				err = f.Reconnect(ctx)
 				if err != nil {
 					t.Fatal(err)
 				}
