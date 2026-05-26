@@ -3,8 +3,8 @@ package jetsream
 import (
 	"time"
 
-	"tangled.org/anhgelus.world/xrpc"
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc"
+	"anhgelus.world/xrpc/atproto"
 )
 
 // Kind of the event.

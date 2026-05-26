@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto"
 )
 
 var CollectionBlob = &atproto.NSID{Name: "blob"}

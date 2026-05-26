@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto"
 )
 
 // MapMarshaler is called by [MarshalToMap] when marshaling the type.

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto"
 )
 
 // Record represents an ATProto record.

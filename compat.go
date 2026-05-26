@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"reflect"
 
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto"
 )
 
 // CompatClient is a [Client] that is compatible with Indigo's LexClient.

@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"tangled.org/anhgelus.world/xrpc/atproto/cbor"
+	"anhgelus.world/xrpc/atproto/cbor"
 )
 
 // CIDVersion is the supported [CID] version.

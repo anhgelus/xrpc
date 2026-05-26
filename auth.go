@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sync"
 
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto"
 )
 
 // Auth describes how to authentificate a request.

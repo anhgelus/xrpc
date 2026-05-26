@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto"
 )
 
 var client Client

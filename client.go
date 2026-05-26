@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto"
 )
 
 // Standard values used by a XRPC client

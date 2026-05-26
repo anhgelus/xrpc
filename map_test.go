@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto"
 )
 
 func validMap(t *testing.T, check any, res map[string]any) {

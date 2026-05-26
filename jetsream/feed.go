@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"sync/atomic"
 
+	"anhgelus.world/xrpc"
+	"anhgelus.world/xrpc/atproto"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
-	"tangled.org/anhgelus.world/xrpc"
-	"tangled.org/anhgelus.world/xrpc/atproto"
 )
 
 // Options used in the [Feed].

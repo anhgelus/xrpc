@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"tangled.org/anhgelus.world/xrpc"
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc"
+	"anhgelus.world/xrpc/atproto"
 )
 
 var collection = atproto.NewNSIDBuilder("com.atproto.server")

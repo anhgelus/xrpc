@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"tangled.org/anhgelus.world/xrpc"
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc"
+	"anhgelus.world/xrpc/atproto"
 )
 
 // AdminAuth is a basic [xrpc.Auth].

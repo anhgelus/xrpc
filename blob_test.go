@@ -6,8 +6,8 @@ import (
 	"slices"
 	"testing"
 
+	"anhgelus.world/xrpc/atproto"
 	"pgregory.net/rapid"
-	"tangled.org/anhgelus.world/xrpc/atproto"
 )
 
 func genCID(t *rapid.T, label string) *atproto.CID {

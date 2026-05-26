@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto"
 )
 
 // RecordStored represents a [Record] containg values about how it is stored.

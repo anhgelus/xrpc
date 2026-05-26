@@ -28,11 +28,11 @@ If it is possible, we will try to make this library compatible with Indigo.
 
 Get the module with
 ```bash 
-go get -u tangled.org/anhgelus.world/xrpc
+go get -u anhgelus.world/xrpc
 ```
 
-XRPC is fully documented, you can check the online documentation at: https://pkg.go.dev/tangled.org/anhgelus.world/xrpc
-or with `go doc`.
+XRPC is fully documented, you can check the online documentation at: https://pkg.go.dev/anhgelus.world/xrpc or with
+`go doc`.
 
 ATProto primitives are in `atproto` package.
 

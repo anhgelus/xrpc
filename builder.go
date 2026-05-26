@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto"
 )
 
 // RequestBuilder is used to create the request endpoint.

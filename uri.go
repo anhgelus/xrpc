@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"tangled.org/anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto"
 )
 
 // ErrIncompleteURI is returned when the [atproto.URI] does not have enough information to be used.
