@@ -41,7 +41,6 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	defer func() {
 		if v := recover(); v != nil {
 			err = fmt.Errorf("%w: %v, for data [% x]", ErrNotCBOR, v, b)
-			panic(err)
 		}
 	}()
 	switch cv := v.(type) {

@@ -8,13 +8,19 @@ dependencies:
   nixpkgs:
     - go
     - gcc
+    - ripgrep
+    - jq
 
 steps:
   - name: Lint code
     command: |
       go vet -v ./...
   - name: Run tests
-    environment:
-      RAPID_CHECKS: 10_000
     command: |
-      go test -v -race ./...
+      go test -rapid.checks=10_000 -v -race -cover ./...
+  - name: Run fuzz
+    command: |
+      values=$(rg "Fuzz\w+" --json | jq -r 'if .type | . != "match" then empty end | .data | (.path.text | split("/")[:-1] | join("/")) + "/" + .submatches[0].match.text')
+      for v in $values; do
+        go test ./$(dirname $v) -v -fuzztime=30s -fuzz $(basename $v)
+      done
