@@ -18,9 +18,13 @@ steps:
   - name: Run tests
     command: |
       go test -rapid.checks=10_000 -v -race -cover ./...
+      res=$?
+      if [ $res -ne 0 ]; then cat "**/testdata/**.fail"; exit $res; fi
   - name: Run fuzz
     command: |
       values=$(rg "Fuzz\w+" --json | jq -r 'if .type | . != "match" then empty end | .data | (.path.text | split("/")[:-1] | join("/")) + "/" + .submatches[0].match.text')
       for v in $values; do
         go test ./$(dirname $v) -v -fuzztime=30s -fuzz $(basename $v)
+        res=$?
+        if [ $res -ne 0 ]; then cat "**/testdata/**.fail"; exit $res; fi
       done
