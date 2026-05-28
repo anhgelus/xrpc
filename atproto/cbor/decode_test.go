@@ -57,7 +57,7 @@ func TestUnmarshal_String(t *testing.T) {
 }
 
 func TestUnmarshal_Array(t *testing.T) {
-	doUnmarshal(t, []byte{0x80}, []byte(nil))
+	doUnmarshal(t, []byte{0x80}, []byte{})
 	doUnmarshal(t, []byte{0x83, 0x01, 0x02, 0x03}, []int{1, 2, 3})
 	doUnmarshal(t, []byte{0x82, 0xf5, 0xf4}, []bool{true, false})
 }

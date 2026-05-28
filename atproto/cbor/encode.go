@@ -41,7 +41,7 @@ func Marshal(v any) ([]byte, error) {
 	}
 	ref := reflect.ValueOf(v)
 	switch ref.Kind() {
-	case reflect.Int:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		val := ref.Int()
 		if ref.Int() < 0 {
 			val = (val * -1) - 1
@@ -49,7 +49,7 @@ func Marshal(v any) ([]byte, error) {
 		}
 		ref = reflect.ValueOf(uint64(val))
 		fallthrough
-	case reflect.Uint:
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return marshalRawInt(unsignedInt, ref.Uint()), nil
 	case reflect.Bool:
 		var b additionalInformation = 20

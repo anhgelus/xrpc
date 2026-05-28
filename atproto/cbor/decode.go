@@ -28,6 +28,8 @@ func extractHead(r *ByteReader) (majorType, additionalInformation) {
 	return majorType(m >> 5), additionalInformation(a)
 }
 
+var anySpecialCase = reflect.TypeFor[any]()
+
 // Unmarshal a type from CBOR.
 // Returns the unparsed data.
 func Unmarshal(b []byte, v any) (rest []byte, err error) {
@@ -81,7 +83,8 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	case mapT:
 		k := ref.Elem().Kind()
 		isMap := k == reflect.Map
-		if !isMap && k != reflect.Struct {
+		isAny := ref.Elem().Type() == anySpecialCase
+		if !isMap && k != reflect.Struct && !isAny {
 			return nil, fmt.Errorf(
 				"%w: must use a Go map or a struct for a CBOR map, not %v",
 				ErrInvalidType, k,
@@ -114,7 +117,7 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 			}
 			mp.SetMapIndex(reflect.ValueOf(key), in)
 		}
-		if k == reflect.Map {
+		if isMap || isAny {
 			val = mp.Interface()
 		} else {
 			val, err = unmarshalMapIntoStruct(mp, ref)
@@ -136,7 +139,10 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	ref.Elem().Set(reflect.ValueOf(val))
+	cv := reflect.ValueOf(val)
+	if !reflect.DeepEqual(val, reflect.Zero(cv.Type())) {
+		ref.Elem().Set(cv)
+	}
 	return r.Drain(), nil
 }
 
@@ -181,9 +187,23 @@ func unmarshalArray(val reflect.Value, a additionalInformation, r *ByteReader) (
 	if err != nil {
 		return nil, err
 	}
-	t := val.Type().Elem()
+	t := val.Type()
+	if t == anySpecialCase {
+		val = reflect.MakeSlice(reflect.SliceOf(anySpecialCase), 0, int(ln))
+	}
+	if ln == 0 {
+		if t == anySpecialCase {
+			return reflect.MakeSlice(reflect.SliceOf(anySpecialCase), 0, 0).Interface(), nil
+		}
+		return reflect.MakeSlice(t, 0, 0).Interface(), nil
+	}
 	for range ln {
-		ptr := reflect.New(t)
+		var ptr reflect.Value
+		if t == anySpecialCase {
+			ptr = reflect.New(anySpecialCase)
+		} else {
+			ptr = reflect.New(t.Elem())
+		}
 		rest, err := Unmarshal(r.Bytes[r.I:], ptr.Interface())
 		if err != nil {
 			return nil, err

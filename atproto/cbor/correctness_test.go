@@ -37,8 +37,17 @@ func genRandom() *rapid.Generator[any] {
 func eqMap(mp1 any, mp2 any) bool {
 	v1 := reflect.ValueOf(mp1)
 	v2 := reflect.ValueOf(mp2)
+	if !v1.IsValid() {
+		panic("invalid mp1!")
+	}
+	if !v2.IsValid() {
+		panic("invalid mp2!")
+	}
 	if v1.Kind() != v2.Kind() {
 		tt := v2.Type()
+		if v1.IsZero() != v2.IsZero() {
+			return false
+		}
 		if !v1.Type().ConvertibleTo(tt) {
 			return false
 		}
@@ -52,7 +61,7 @@ func eqMap(mp1 any, mp2 any) bool {
 			if !ok {
 				return false
 			}
-			if !eqMap(val, r.Value().Interface()) {
+			if !eqMap(r.Value().Interface(), val) {
 				return false
 			}
 		}
@@ -86,6 +95,12 @@ func FuzzCorrectness(t *testing.F) {
 		if len(rest) != 0 {
 			t.Errorf("expected no rest: % x", rest)
 		}
+		defer func() {
+			err := recover()
+			if err != nil {
+				t.Fatalf("%v:\t\nwanted: %#v\t\ngot: %#v", err, mp, res)
+			}
+		}()
 		if !eqMap(mp, res) {
 			t.Errorf("expected equals maps:\ninput %#v\noutput %#v", mp, res)
 		}
