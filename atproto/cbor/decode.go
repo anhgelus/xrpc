@@ -33,16 +33,17 @@ var anySpecialCase = reflect.TypeFor[any]()
 // Unmarshal a type from CBOR.
 // Returns the unparsed data.
 func Unmarshal(b []byte, v any) (rest []byte, err error) {
-	ref := reflect.ValueOf(v)
-	if ref.Kind() != reflect.Pointer || ref.IsNil() {
+	ptr := reflect.ValueOf(v)
+	if ptr.Kind() != reflect.Pointer || ptr.IsNil() {
 		return nil, fmt.Errorf("%w: given %T", ErrUnmarshalRequiresPointer, v)
 	}
-	for ref.Elem().Kind() == reflect.Pointer {
-		ref = ref.Elem()
+	for ptr.Elem().Kind() == reflect.Pointer {
+		ptr = ptr.Elem()
 	}
 	defer func() {
 		if v := recover(); v != nil {
 			err = fmt.Errorf("%w: %v, for data [% x]", ErrNotCBOR, v, b)
+			panic(err)
 		}
 	}()
 	switch cv := v.(type) {
@@ -54,82 +55,39 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	r := &ByteReader{Bytes: b}
 	m, a := extractHead(r)
 
-	var val any
 	switch m {
 	case unsignedInt:
 		var t uint64
 		t, err = unmarshalRawUint(a, r)
 		if err != nil {
-			return nil, err
+			return
 		}
-		val, err = unmarshalInt(ref.Elem().Type(), reflect.ValueOf(t))
+		err = unmarshalInt(ptr, reflect.ValueOf(t))
 	case negativeInt:
 		var t uint64
 		t, err = unmarshalRawUint(a, r)
 		if err != nil {
-			return nil, err
-		}
-		val, err = unmarshalInt(ref.Elem().Type(), reflect.ValueOf(int64(t)*-1-1))
-	case byteString:
-		val, err = unmarshalBytes(a, r)
-	case textString:
-		var t []byte
-		t, err = unmarshalBytes(a, r)
-		if err == nil {
-			val = string(t)
-		}
-	case array:
-		val, err = unmarshalArray(ref.Elem(), a, r)
-	case mapT:
-		k := ref.Elem().Kind()
-		isMap := k == reflect.Map
-		isAny := ref.Elem().Type() == anySpecialCase
-		if !isMap && k != reflect.Struct && !isAny {
-			return nil, fmt.Errorf(
-				"%w: must use a Go map or a struct for a CBOR map, not %v",
-				ErrInvalidType, k,
-			)
-		}
-		t := ref.Elem().Type()
-		if isMap && t.Key().Kind() != reflect.String {
-			return nil, fmt.Errorf("%w: map must use string as keys", ErrInvalidType)
-		}
-		var ln uint64
-		ln, err = unmarshalRawUint(a, r)
-		if err != nil {
 			return
 		}
-		var mp reflect.Value
-		if isMap {
-			mp = reflect.MakeMapWithSize(t, int(ln))
-		} else {
-			mp = reflect.MakeMapWithSize(
-				reflect.MapOf(reflect.TypeFor[string](), reflect.TypeFor[any]()),
-				int(ln),
-			)
-		}
-		for range ln {
-			var key string
-			var in reflect.Value
-			key, in, err = unmarshalKeyVal(r, mp.Type().Elem())
-			if err != nil {
-				return
-			}
-			mp.SetMapIndex(reflect.ValueOf(key), in)
-		}
-		if isMap || isAny {
-			val = mp.Interface()
-		} else {
-			val, err = unmarshalMapIntoStruct(mp, ref)
-		}
+		err = unmarshalInt(ptr, reflect.ValueOf(int64(t)*-1-1))
+	case byteString:
+		err = unmarshalBytes(ptr, a, r)
+	case textString:
+		sub := reflect.New(reflect.TypeFor[string]())
+		err = unmarshalBytes(sub, a, r)
+		ptr.Elem().Set(sub.Elem())
+	case array:
+		err = unmarshalArray(ptr, a, r)
+	case mapT:
+		err = unmarshalMap(ptr, a, r)
 	case tag:
-		return nil, fmt.Errorf("%w: must use a Tag to decode a tag", ErrInvalidType)
+		return nil, fmt.Errorf("%w: must use Tag to decode a tag", ErrInvalidType)
 	case simpleValues:
 		switch a {
 		case 20:
-			val = false
+			ptr.Elem().Set(reflect.ValueOf(false))
 		case 21:
-			val = true
+			ptr.Elem().Set(reflect.ValueOf(true))
 		case 22:
 			return r.Drain(), nil
 		default:
@@ -137,11 +95,7 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 		}
 	}
 	if err != nil {
-		return nil, err
-	}
-	cv := reflect.ValueOf(val)
-	if !reflect.DeepEqual(val, reflect.Zero(cv.Type())) {
-		ref.Elem().Set(cv)
+		return
 	}
 	return r.Drain(), nil
 }
@@ -164,55 +118,69 @@ func unmarshalRawUint(a additionalInformation, r *ByteReader) (uint64, error) {
 	}
 }
 
-func unmarshalInt(t reflect.Type, val reflect.Value) (any, error) {
-	if val.CanConvert(t) {
-		return val.Convert(t).Interface(), nil
-	}
-	if t.Kind() == reflect.Interface {
-		return val.Interface(), nil
-	}
-	return nil, fmt.Errorf("%w: %v is not an (u)int", ErrInvalidType, t.String())
-}
-
-func unmarshalBytes(a additionalInformation, r *ByteReader) ([]byte, error) {
-	ln, err := unmarshalRawUint(a, r)
-	if err != nil {
-		return nil, err
-	}
-	return r.More(uint(ln)), nil
-}
-
-func unmarshalArray(val reflect.Value, a additionalInformation, r *ByteReader) (any, error) {
-	ln, err := unmarshalRawUint(a, r)
-	if err != nil {
-		return nil, err
-	}
-	t := val.Type()
+func unmarshalInt(ptr reflect.Value, val reflect.Value) error {
+	t := ptr.Elem().Type()
 	if t == anySpecialCase {
-		val = reflect.MakeSlice(reflect.SliceOf(anySpecialCase), 0, int(ln))
+		ptr.Elem().Set(val)
+		return nil
+	}
+	if val.CanConvert(t) {
+		ptr.Elem().Set(val.Convert(t))
+		return nil
+	}
+	return fmt.Errorf("%w: %v is not an (u)int", ErrInvalidType, t.String())
+}
+
+func unmarshalBytes(ptr reflect.Value, a additionalInformation, r *ByteReader) error {
+	ln, err := unmarshalRawUint(a, r)
+	if err != nil {
+		return err
+	}
+	b := reflect.ValueOf(r.More(uint(ln)))
+	t := ptr.Elem().Type()
+	if t == anySpecialCase {
+		ptr.Elem().Set(b)
+	} else if b.CanConvert(ptr.Elem().Type()) {
+		ptr.Elem().Set(b.Convert(t))
+	} else {
+		ptr.Elem().Set(b)
+	}
+	return nil
+}
+
+func unmarshalArray(ptr reflect.Value, a additionalInformation, r *ByteReader) error {
+	ln, err := unmarshalRawUint(a, r)
+	if err != nil {
+		return err
+	}
+	t := ptr.Elem().Type()
+	var inner reflect.Value
+	if t == anySpecialCase {
+		inner = reflect.MakeSlice(reflect.SliceOf(t), 0, int(ln))
+	} else {
+		inner = reflect.MakeSlice(t, 0, int(ln))
 	}
 	if ln == 0 {
-		if t == anySpecialCase {
-			return reflect.MakeSlice(reflect.SliceOf(anySpecialCase), 0, 0).Interface(), nil
-		}
-		return reflect.MakeSlice(t, 0, 0).Interface(), nil
+		ptr.Elem().Set(inner)
+		return nil
 	}
 	for range ln {
-		var ptr reflect.Value
+		var val reflect.Value
 		if t == anySpecialCase {
-			ptr = reflect.New(anySpecialCase)
+			val = reflect.New(anySpecialCase)
 		} else {
-			ptr = reflect.New(t.Elem())
+			val = reflect.New(t.Elem())
 		}
-		rest, err := Unmarshal(r.Bytes[r.I:], ptr.Interface())
+		rest, err := Unmarshal(r.Bytes[r.I:], val.Interface())
 		if err != nil {
-			return nil, err
+			return err
 		}
 		r.Bytes = rest
 		r.I = 0
-		val = reflect.Append(val, ptr.Elem())
+		inner = reflect.Append(inner, val.Elem())
 	}
-	return val.Interface(), nil
+	ptr.Elem().Set(inner)
+	return nil
 }
 
 func unmarshalKeyVal(r *ByteReader, t reflect.Type) (string, reflect.Value, error) {
@@ -237,8 +205,49 @@ type fieldInfo struct {
 	typ   reflect.StructField
 }
 
-func unmarshalMapIntoStruct(mp reflect.Value, v reflect.Value) (any, error) {
-	el := v.Elem()
+func unmarshalMap(ptr reflect.Value, a additionalInformation, r *ByteReader) error {
+	k := ptr.Elem().Kind()
+	isMap := k == reflect.Map
+	isAny := ptr.Elem().Type() == anySpecialCase
+	if !isMap && k != reflect.Struct && !isAny {
+		return fmt.Errorf(
+			"%w: must use a Go map or a struct for a CBOR map, not %v",
+			ErrInvalidType, k,
+		)
+	}
+	t := ptr.Elem().Type()
+	if isMap && t.Key().Kind() != reflect.String {
+		return fmt.Errorf("%w: map must use string as keys", ErrInvalidType)
+	}
+	ln, err := unmarshalRawUint(a, r)
+	if err != nil {
+		return err
+	}
+	var mp reflect.Value
+	if isMap {
+		mp = reflect.MakeMapWithSize(t, int(ln))
+	} else {
+		mp = reflect.MakeMapWithSize(
+			reflect.MapOf(reflect.TypeFor[string](), reflect.TypeFor[any]()),
+			int(ln),
+		)
+	}
+	for range ln {
+		key, in, err := unmarshalKeyVal(r, mp.Type().Elem())
+		if err != nil {
+			return err
+		}
+		mp.SetMapIndex(reflect.ValueOf(key), in)
+	}
+	if isMap || isAny {
+		ptr.Elem().Set(mp)
+		return nil
+	}
+	return unmarshalMapIntoStruct(ptr, mp)
+}
+
+func unmarshalMapIntoStruct(ptr reflect.Value, mp reflect.Value) error {
+	el := ptr.Elem()
 	fields := make(map[string]fieldInfo, el.NumField())
 	for i := range el.NumField() {
 		f := el.Type().Field(i)
@@ -259,50 +268,59 @@ func unmarshalMapIntoStruct(mp reflect.Value, v reflect.Value) (any, error) {
 		if f.opt.omitempty && reflect.DeepEqual(val.Interface(), reflect.Zero(val.Type())) {
 			continue
 		}
-		if f.opt.toString && val.Kind() == reflect.String {
-			var err error
-			val, err = unmarshalStringConvertisser(f.typ.Type, val)
+		v := val
+		if f.opt.toString {
+			ptr := reflect.New(f.typ.Type)
+			err := unmarshalStringConvertisser(ptr, v)
 			if err != nil {
-				return nil, err
+				return err
 			}
+			v = ptr.Elem()
 		}
-		t := f.field.Type()
-		if val.CanConvert(t) {
-			val = val.Convert(t)
-		} else if val.Type() != t {
-			return nil, fmt.Errorf("%w: cannot convert %v into %v", ErrInvalidType, val.Type(), t)
+		t := f.typ.Type
+		if v.CanConvert(t) {
+			v = v.Convert(t)
+		} else if v.Type() != t {
+			return fmt.Errorf("%w: cannot convert %v into %v", ErrInvalidType, v.Type(), t)
 		}
-		if val.IsZero() {
+		if v.IsZero() {
 			f.field.SetZero()
 		} else {
-			f.field.Set(val)
+			f.field.Set(v)
 		}
 	}
-	return el.Interface(), nil
+	ptr.Elem().Set(el)
+	return nil
 }
 
-func unmarshalStringConvertisser(typ reflect.Type, val reflect.Value) (reflect.Value, error) {
-	if typ.ConvertibleTo(reflect.TypeFor[uint]()) {
+func unmarshalStringConvertisser(ptr reflect.Value, val reflect.Value) error {
+	t := ptr.Elem().Type()
+	target := reflect.TypeFor[uint]()
+	if t.ConvertibleTo(target) {
 		res, err := strconv.ParseUint(val.String(), 10, 64)
 		if err == nil {
-			return reflect.ValueOf(res), nil
+			ptr.Elem().Set(reflect.ValueOf(res).Convert(target))
+			return nil
 		}
 	}
-	if typ.ConvertibleTo(reflect.TypeFor[int]()) {
+	target = reflect.TypeFor[int]()
+	if t.ConvertibleTo(target) {
 		res, err := strconv.ParseInt(val.String(), 10, 64)
 		if err == nil {
-			return reflect.ValueOf(res), nil
+			ptr.Elem().Set(reflect.ValueOf(res).Convert(target))
+			return nil
 		}
 	}
-	if typ.ConvertibleTo(reflect.TypeFor[bool]()) {
+	target = reflect.TypeFor[bool]()
+	if t.ConvertibleTo(target) {
 		res, err := strconv.ParseBool(val.String())
 		if err == nil {
-			val = reflect.ValueOf(res)
-			return reflect.ValueOf(res), nil
+			ptr.Elem().Set(reflect.ValueOf(res).Convert(target))
+			return nil
 		}
 	}
-	return reflect.Zero(typ), fmt.Errorf(
-		"%w: cannot convert %#v (%T) into string",
-		ErrInvalidType, val.Interface(), val.Interface(),
+	return fmt.Errorf(
+		"%w: cannot convert %#v (%v) into string",
+		ErrInvalidType, val, val.Type(),
 	)
 }
