@@ -52,7 +52,7 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	case Tag:
 		return unmarshalTag(b, cv)
 	}
-	r := &ByteReader{Bytes: b}
+	r := &ByteReader{bytes: b}
 	m, a := extractHead(r)
 
 	switch m {
@@ -171,12 +171,11 @@ func unmarshalArray(ptr reflect.Value, a additionalInformation, r *ByteReader) e
 		} else {
 			val = reflect.New(t.Elem())
 		}
-		rest, err := Unmarshal(r.Bytes[r.I:], val.Interface())
+		rest, err := Unmarshal(r.Drain(), val.Interface())
 		if err != nil {
 			return err
 		}
-		r.Bytes = rest
-		r.I = 0
+		r.Reset(rest)
 		inner = reflect.Append(inner, val.Elem())
 	}
 	ptr.Elem().Set(inner)
@@ -185,7 +184,7 @@ func unmarshalArray(ptr reflect.Value, a additionalInformation, r *ByteReader) e
 
 func unmarshalKeyVal(r *ByteReader, t reflect.Type) (string, reflect.Value, error) {
 	var s string
-	rest, err := Unmarshal(r.Bytes[r.I:], &s)
+	rest, err := Unmarshal(r.Drain(), &s)
 	if err != nil {
 		return "", reflect.ValueOf(nil), err
 	}
@@ -194,8 +193,7 @@ func unmarshalKeyVal(r *ByteReader, t reflect.Type) (string, reflect.Value, erro
 	if err != nil {
 		return "", reflect.ValueOf(nil), err
 	}
-	r.Bytes = rest
-	r.I = 0
+	r.Reset(rest)
 	return s, ptr.Elem(), err
 }
 

@@ -50,7 +50,7 @@ func marshalTag(t Tag) ([]byte, error) {
 }
 
 func unmarshalTag(b []byte, t Tag) ([]byte, error) {
-	r := &ByteReader{Bytes: b}
+	r := &ByteReader{bytes: b}
 	m, a := extractHead(r)
 	if m != tag {
 		return nil, fmt.Errorf("%w: %v is not a tag, for data [% x]", ErrInvalidType, m, b)
@@ -102,41 +102,46 @@ func parseTag(tag string) options {
 
 // ByteReader is a helper to read bytes.
 type ByteReader struct {
-	Bytes []byte
-	I     uint
+	bytes []byte
+	i     uint
+}
+
+func (r *ByteReader) Reset(b []byte) {
+	r.i = 0
+	r.bytes = b
 }
 
 // Next returns the next byte.
 // It doesn't perform sanity checks.
 func (r *ByteReader) Next() byte {
-	b := r.Bytes[r.I]
-	r.I++
+	b := r.bytes[r.i]
+	r.i++
 	return b
 }
 
 // Consume the current byte without returning it.
 // Returns true if everything was read.
 func (r *ByteReader) Consume() bool {
-	r.I++
-	return int(r.I) < len(r.Bytes)
+	r.i++
+	return int(r.i) < len(r.bytes)
 }
 
 // More performs multiple calls to [Next].
 func (r *ByteReader) More(i uint) []byte {
-	b := r.Bytes[r.I : r.I+i]
-	r.I += i
+	b := r.bytes[r.i : r.i+i]
+	r.i += i
 	return b
 }
 
 // Peek return the next byte without consuming it.
 func (r *ByteReader) Peek() byte {
-	return r.Bytes[r.I]
+	return r.bytes[r.i]
 }
 
 // Drain the remaining bytes and return them.
 func (r *ByteReader) Drain() []byte {
-	if int(r.I) >= len(r.Bytes) {
+	if int(r.i) >= len(r.bytes) {
 		return nil
 	}
-	return r.Bytes[r.I:]
+	return r.bytes[r.i:]
 }

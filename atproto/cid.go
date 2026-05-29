@@ -238,10 +238,11 @@ func (c *CIDLink) UnmarshalCBOR(tag uint64, r *cbor.ByteReader) ([]byte, error) 
 		return nil, fmt.Errorf("%w: tag %d is not a CID link (tag %d)", cbor.ErrInvalidType, tag, c.Tag())
 	}
 	var raw []byte
-	rest, err := cbor.Unmarshal(r.Bytes, &raw)
+	rest, err := cbor.Unmarshal(r.Drain(), &raw)
 	if err != nil {
 		return nil, err
 	}
+	r.Reset(rest)
 	decoded, err := ParseCID(raw)
 	if err != nil {
 		return nil, err
