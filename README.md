@@ -187,7 +187,7 @@ If you want real examples, you can look at:
   - [x] JWT Auth
   - [ ] OAuth
 - [ ] [Stream](https://atproto.com/specs/event-stream)
-  - [x] CBOR encoding/decoding (experimental)
+  - [x] CBOR encoding/decoding (experimental, but fuzz tested)
   - [x] Jetsream support
   - [ ] Relay connection
 - [ ] [Service proxying](https://atproto.com/specs/xrpc#service-proxying)

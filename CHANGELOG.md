@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.0
+
+New features:
+- CBOR in `atproto/cbor`
+- Jetstream in `jetstream`
+
 ## v0.4.0
 
 Breaking change:
