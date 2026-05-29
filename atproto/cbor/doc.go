@@ -12,13 +12,13 @@
 // For example,
 //
 //	type Foo struct {
-//		A bool `cbor="a"`
-//		B uint `cbor="b"`
+//		A bool `cbor:"a"`
+//		B uint `cbor:"b"`
 //	}
 //
 // will create a CBOR map with `a` and `b` as keys.
 // You can use `omitempty` if it must omit the field if it's value is zero (see [reflect.Zero]).
 // You can use `string` if it must be converted into a string while encoding.
 //
-// If there is no `cbor` tag, it uses the common `json` tag used by `encoding/json`.
+// If there is no `cbor` tag, it uses the common `json` tag used by [encoding/json].
 package cbor
