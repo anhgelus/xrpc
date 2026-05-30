@@ -65,6 +65,10 @@ func (d *DID) URI() URI {
 	return URI{authority: d}
 }
 
+func (d *DID) Is(other *DID) bool {
+	return d.Method == other.Method && d.Identifier == other.Identifier
+}
+
 func (d *DID) document(ctx context.Context, client *http.Client) (*DIDDocument, error) {
 	switch d.Method {
 	case DIDWeb:

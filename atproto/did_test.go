@@ -60,6 +60,7 @@ func genDid(t *rapid.T, label string) string {
 }
 
 func TestParseDid(t *testing.T) {
+	var prev *DID
 	rapid.Check(t, func(t *rapid.T) {
 		did := genDid(t, "did")
 		t.Log(did)
@@ -70,6 +71,13 @@ func TestParseDid(t *testing.T) {
 		if d.String() != did {
 			t.Errorf("invalid parsing: %s, wanted %s", d, did)
 		}
+		if !d.Is(d) {
+			t.Error("did is not equal to did", d)
+		}
+		if prev != nil && d.Is(prev) {
+			t.Errorf("%s is equal to previous %s", d, prev)
+		}
+		prev = d
 	})
 	for _, did := range invalidDids {
 		_, err := ParseDID(did)
