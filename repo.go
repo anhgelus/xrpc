@@ -250,7 +250,7 @@ func sendRecord(
 	req RequestBuilder,
 	body sendRecordRequest,
 ) (*SendRecordResult, error) {
-	b, useCbor, err := client.Procedure(ctx, req, AsJsonBodyRequest(body))
+	b, useCbor, err := client.Procedure(ctx, req, AsEncodeBodyRequest(body))
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +274,7 @@ func DeleteRecord[T Record](
 ) (*CommitMeta, error) {
 	req := client.NewRequest().Endpoint(collection.Name("deleteRecord").Build())
 	var rec T
-	b, useCbor, err := client.Procedure(ctx, req, AsJsonBodyRequest(sendRecordRequest{
+	b, useCbor, err := client.Procedure(ctx, req, AsEncodeBodyRequest(sendRecordRequest{
 		Repo:       req.GetAuth().DID(),
 		Collection: rec.Collection(),
 		RKey:       rkey,

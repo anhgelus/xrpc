@@ -44,7 +44,7 @@ func CreateInviteCode(ctx context.Context, client xrpc.Client, useCount uint, fo
 		UseCount   uint         `json:"useCount"`
 		ForAccount *atproto.DID `json:"forAccount,omitempty"`
 	}{useCount, forAccount}
-	b, useCbor, err := client.Procedure(ctx, req, xrpc.AsJsonBodyRequest(v))
+	b, useCbor, err := client.Procedure(ctx, req, xrpc.AsEncodeBodyRequest(v))
 	if err != nil {
 		return "", err
 	}

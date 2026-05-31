@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto/cbor"
 )
 
 // Record represents an ATProto record.
@@ -42,7 +43,8 @@ func (u *Union) Collection() *atproto.NSID {
 
 func (u *Union) MarshalMap() (any, error) {
 	if u.Content != nil {
-		return Marshal(u.Content)
+		//TODO: handle cbor encoding
+		return Marshal(u.Content, false)
 	}
 	return u.Raw, nil
 }
@@ -74,10 +76,10 @@ func (u *Union) As(rec Record) bool {
 	return err == nil
 }
 
-// Marshal a [Record] into a JSON.
+// Marshal a [Record] into a JSON or into a CBOR.
 //
 // See [MarshalToMap].
-func Marshal(a any) ([]byte, error) {
+func Marshal(a any, toCBOR bool) ([]byte, error) {
 	v, err := MarshalToMap(a)
 	if err != nil {
 		return nil, err
@@ -85,12 +87,18 @@ func Marshal(a any) ([]byte, error) {
 	if rec, ok := a.(Record); ok {
 		v.(map[string]any)["$type"] = rec.Collection()
 	}
+	if toCBOR {
+		return cbor.Marshal(v)
+	}
 	return json.Marshal(v)
 }
 
 var collection = atproto.NewNSIDBuilder("com.atproto.repo")
 
-var CollectionStrongRef = collection.Name("strongRef").Build()
+var (
+	CollectionStrongRef  = collection.Name("strongRef").Build()
+	CollectionCommitMeta = collection.Name("defs").Fragment("commitMeta").Build()
+)
 
 // StrongRef is an [atproto.RawURI] with a content-hash fingerprint.
 //
@@ -112,8 +120,6 @@ func (s *StrongRef) GetRef(ctx context.Context, client Client) (*Union, error) {
 	}
 	return union.Value, nil
 }
-
-var CollectionCommitMeta = collection.Name("defs").Fragment("commitMeta").Build()
 
 // CommitMeta contains information about a certain commit.
 //

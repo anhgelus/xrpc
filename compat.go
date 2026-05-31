@@ -55,14 +55,14 @@ func (c *CompatClient) LexDo(
 	case Query:
 		b, useCbor, err = c.Query(ctx, req)
 	case Procedure:
-		var body RawBodyRequest
-		body.Type = inputEncoding
+		var body BodyRequest
+		body.ContentType = inputEncoding
 		if r, ok := bodyData.(io.Reader); ok {
 			body.Content, err = io.ReadAll(r)
 		} else {
 			body.Content, err = json.Marshal(bodyData)
-			if body.Type == "" {
-				body.Type = "application/json"
+			if body.ContentType == "" {
+				body.ContentType = "application/json"
 			}
 		}
 		if err != nil {

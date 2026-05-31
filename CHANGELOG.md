@@ -4,6 +4,7 @@
 
 Breaking change:
 - low-level XRPC API indicates if the bytes are encoded with CBOR instead of JSON
+- `Marshal` now takes a second argument indicating if it must be marshaled into a CBOR instead
 
 New features:
 - `Is` method for `atproto.DID`

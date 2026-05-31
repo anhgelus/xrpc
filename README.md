@@ -109,7 +109,7 @@ if err != nil {
 ```
 
 > [!WARNING] 
-> You should always call `xrpc.Marshal` when marshaling a `Record` into JSON!
+> You should always call `xrpc.Marshal` when marshaling a `Record` into JSON or into CBOR!
 
 > [!INFO]
 > You can easily unmarshal a response with `xrpc.Unmarshal`: it's a simple helper handling both JSON and CBOR encodings.

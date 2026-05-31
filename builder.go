@@ -75,7 +75,7 @@ func (rb RequestBuilder) GetAuth() Auth {
 // Build returns a valid string representation of the request's endpoint and true if it must use CBOR.
 //
 // Panics if server or endpoint is not set.
-func (rb RequestBuilder) Build(method string, body BodyRequest) (*http.Request, bool, error) {
+func (rb RequestBuilder) Build(method string, body BodyRequestConverter) (*http.Request, bool, error) {
 	if rb.server == "" {
 		panic("cannot finish: server (PDS or relay) is not set")
 	}
@@ -83,12 +83,14 @@ func (rb RequestBuilder) Build(method string, body BodyRequest) (*http.Request, 
 		panic("cannot finish: endpoint is not set")
 	}
 	var content io.Reader
+	var b BodyRequest
+	var err error
 	if body != nil {
-		b, err := body.Body()
+		b, err = body.AsBodyRequest(rb.useRelay)
 		if err != nil {
 			return nil, false, err
 		}
-		content = bytes.NewReader(b)
+		content = bytes.NewReader(b.Content)
 	}
 
 	req, err := http.NewRequest(method, rb.String(), content)
@@ -98,7 +100,7 @@ func (rb RequestBuilder) Build(method string, body BodyRequest) (*http.Request, 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", rb.userAgent)
 	if body != nil {
-		req.Header.Set("Content-Type", body.ContentType())
+		req.Header.Set("Content-Type", b.ContentType)
 	}
 	if rb.auth != nil {
 		rb.auth.AuthRequest(req)
@@ -122,48 +124,41 @@ func (rb RequestBuilder) String() string {
 	return sb.String()
 }
 
-// BodyRequest contains data sent during a [Client.Procedure].
+// BodyRequestConverter is a wrapper used to send data during a [Client.Procedure].
 //
-// See [JsonBodyRequest] to encode anything into JSON.
-// See [RawBodyRequest] to send raw data.
-type BodyRequest interface {
-	// Body returns the body of the Request.
-	Body() ([]byte, error)
-	// ContentType return the Content-Type header of the [BodyRequest.Body].
-	ContentType() string
+// See [EncodeBodyRequest] and [BodyRequest].
+type BodyRequestConverter interface {
+	// AsBodyRequest converts an [BodyRequestConverter] into a [BodyRequest].
+	// It takes a bool set to true if it must encode the data into CBOR.
+	AsBodyRequest(bool) (BodyRequest, error)
 }
 
-// JsonBodyRequest is a [BodyRequest] that encodes the data into JSON.
+// EncodeBodyRequest is a [BodyRequest] that encodes the data.
 //
-// See [AsJsonBodyRequest] to create a new [JsonBodyRequest].
-type JsonBodyRequest struct {
+// See [AsEncodeBodyRequest] to create a new [EncodeBodyRequest].
+type EncodeBodyRequest struct {
 	any
 }
 
-func AsJsonBodyRequest(v any) JsonBodyRequest {
-	return JsonBodyRequest{v}
+func (e EncodeBodyRequest) AsBodyRequest(useCbor bool) (BodyRequest, error) {
+	b, err := Marshal(e, useCbor)
+	return BodyRequest{b, "application/json"}, err
 }
 
-func (j JsonBodyRequest) Body() ([]byte, error) {
-	return Marshal(j)
+func AsEncodeBodyRequest(v any) EncodeBodyRequest {
+	return EncodeBodyRequest{v}
 }
 
-func (j JsonBodyRequest) ContentType() string {
-	return "application/json"
-}
-
-// RawBodyRequest is a [BodyRequest] that contains raw data.
-type RawBodyRequest struct {
+// BodyRequest contains data sent during a [Client.Procedure].
+//
+// See [EncodeBodyRequest] to encode anything.
+type BodyRequest struct {
 	// Content of the request.
 	Content []byte
 	// Type of the [RawBodyRequest.Content].
-	Type string
+	ContentType string
 }
 
-func (r RawBodyRequest) Body() ([]byte, error) {
-	return r.Content, nil
-}
-
-func (r RawBodyRequest) ContentType() string {
-	return r.Type
+func (b BodyRequest) AsBodyRequest(bool) (BodyRequest, error) {
+	return b, nil
 }

@@ -24,7 +24,7 @@ func (b *Blob) Collection() *atproto.NSID {
 // Blob restrictions (mimetype, size, etc) are enforced when the reference is created.
 func UploadBlob(ctx context.Context, client Client, contentType string, blob []byte) (*Blob, error) {
 	req := client.NewRequest().Endpoint(collection.Name("UploadBlob").Build())
-	b, useCbor, err := client.Procedure(ctx, req, RawBodyRequest{blob, contentType})
+	b, useCbor, err := client.Procedure(ctx, req, BodyRequest{blob, contentType})
 	if err != nil {
 		return nil, err
 	}

@@ -36,7 +36,7 @@ type Client interface {
 	// Returns the content of the response and true if it is encoded with CBOR.
 	//
 	// Returns [ErrResponse] if the response code indicates an error >= 400.
-	Procedure(context.Context, RequestBuilder, BodyRequest) ([]byte, bool, error)
+	Procedure(context.Context, RequestBuilder, BodyRequestConverter) ([]byte, bool, error)
 	// FetchRawURI returns the [Record] pointed by the [atproto.RawURI].
 	//
 	// Returns [ErrIncompleteURI] if the [atproto.RawURI] doesn't contain enough information to get [Record].
@@ -86,11 +86,11 @@ func (c *BaseClient) Query(ctx context.Context, rb RequestBuilder) ([]byte, bool
 	return c.do(ctx, Query, rb, nil)
 }
 
-func (c *BaseClient) Procedure(ctx context.Context, rb RequestBuilder, body BodyRequest) ([]byte, bool, error) {
+func (c *BaseClient) Procedure(ctx context.Context, rb RequestBuilder, body BodyRequestConverter) ([]byte, bool, error) {
 	return c.do(ctx, Procedure, rb, body)
 }
 
-func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, body BodyRequest) ([]byte, bool, error) {
+func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, body BodyRequestConverter) ([]byte, bool, error) {
 	req, useCbor, err := rb.Build(method, body)
 	if err != nil {
 		return nil, useCbor, err

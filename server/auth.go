@@ -81,7 +81,7 @@ func CreateSession(
 	rb := client.NewRequest().
 		Server(server).
 		Endpoint(collection.Name("createSession").Build())
-	b, useCbor, err := client.Procedure(ctx, rb, xrpc.AsJsonBodyRequest(params))
+	b, useCbor, err := client.Procedure(ctx, rb, xrpc.AsEncodeBodyRequest(params))
 	if err != nil {
 		return nil, err
 	}
