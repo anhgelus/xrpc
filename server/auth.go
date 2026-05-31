@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 
 	"anhgelus.world/xrpc"
@@ -82,12 +81,12 @@ func CreateSession(
 	rb := client.NewRequest().
 		Server(server).
 		Endpoint(collection.Name("createSession").Build())
-	b, err := client.Procedure(ctx, rb, xrpc.AsJsonBodyRequest(params))
+	b, useCbor, err := client.Procedure(ctx, rb, xrpc.AsJsonBodyRequest(params))
 	if err != nil {
 		return nil, err
 	}
 	var resp sessionResult
-	err = json.Unmarshal(b, &resp)
+	err = xrpc.Unmarshal(b, useCbor, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -108,12 +107,12 @@ func RefreshSession(ctx context.Context, client *xrpc.AuthClient) error {
 	rb := client.NewRequest().
 		Auth(auth.AuthRequestRefresh()).
 		Endpoint(collection.Name("refreshSession").Build())
-	b, err := client.Procedure(ctx, rb, nil)
+	b, useCbor, err := client.Procedure(ctx, rb, nil)
 	if err != nil {
 		return err
 	}
 	var resp sessionResult
-	err = json.Unmarshal(b, &resp)
+	err = xrpc.Unmarshal(b, useCbor, &resp)
 	if err != nil {
 		return err
 	}
@@ -130,6 +129,6 @@ func DeleteSession(ctx context.Context, client *xrpc.AuthClient) error {
 		return ErrNotJWT
 	}
 	rb := client.NewRequest().Endpoint(collection.Name("deleteSession").Build())
-	_, err := client.Procedure(ctx, rb, nil)
+	_, _, err := client.Procedure(ctx, rb, nil)
 	return err
 }

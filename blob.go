@@ -2,7 +2,6 @@ package xrpc
 
 import (
 	"context"
-	"encoding/json"
 
 	"anhgelus.world/xrpc/atproto"
 )
@@ -25,12 +24,12 @@ func (b *Blob) Collection() *atproto.NSID {
 // Blob restrictions (mimetype, size, etc) are enforced when the reference is created.
 func UploadBlob(ctx context.Context, client Client, contentType string, blob []byte) (*Blob, error) {
 	req := client.NewRequest().Endpoint(collection.Name("UploadBlob").Build())
-	b, err := client.Procedure(ctx, req, RawBodyRequest{blob, contentType})
+	b, useCbor, err := client.Procedure(ctx, req, RawBodyRequest{blob, contentType})
 	if err != nil {
 		return nil, err
 	}
 	var v struct {
 		Blob *Blob `json:"blob"`
 	}
-	return v.Blob, json.Unmarshal(b, &v)
+	return v.Blob, Unmarshal(b, useCbor, &v)
 }

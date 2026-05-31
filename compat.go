@@ -50,9 +50,10 @@ func (c *CompatClient) LexDo(
 	req := c.NewRequest().Endpoint(nsid).Params(val)
 
 	var b []byte
+	var useCbor bool
 	switch method {
 	case Query:
-		b, err = c.Query(ctx, req)
+		b, useCbor, err = c.Query(ctx, req)
 	case Procedure:
 		var body RawBodyRequest
 		body.Type = inputEncoding
@@ -67,7 +68,7 @@ func (c *CompatClient) LexDo(
 		if err != nil {
 			return err
 		}
-		b, err = c.Procedure(ctx, req, body)
+		b, useCbor, err = c.Procedure(ctx, req, body)
 	}
 	if err != nil {
 		return err
@@ -75,7 +76,7 @@ func (c *CompatClient) LexDo(
 	if out == nil {
 		return nil
 	}
-	return json.Unmarshal(b, &out)
+	return Unmarshal(b, useCbor, &out)
 }
 
 func parseIndigoParams(params map[string]any) (url.Values, error) {

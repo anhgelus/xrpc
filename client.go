@@ -28,13 +28,15 @@ const (
 // See [NewRelayClient] to create a new [RelayClient].
 type Client interface {
 	// Query performs an XRPC [Query].
+	// Returns the content of the response and true if it is encoded with CBOR.
 	//
 	// Returns [ErrResponse] if the response code indicates an error >= 400.
-	Query(context.Context, RequestBuilder) ([]byte, error)
+	Query(context.Context, RequestBuilder) ([]byte, bool, error)
 	// Procedure performs an XRPC [Procedure].
+	// Returns the content of the response and true if it is encoded with CBOR.
 	//
 	// Returns [ErrResponse] if the response code indicates an error >= 400.
-	Procedure(context.Context, RequestBuilder, BodyRequest) ([]byte, error)
+	Procedure(context.Context, RequestBuilder, BodyRequest) ([]byte, bool, error)
 	// FetchRawURI returns the [Record] pointed by the [atproto.RawURI].
 	//
 	// Returns [ErrIncompleteURI] if the [atproto.RawURI] doesn't contain enough information to get [Record].
@@ -80,23 +82,23 @@ func (c *BaseClient) Directory() atproto.Directory {
 	return c.dir
 }
 
-func (c *BaseClient) Query(ctx context.Context, rb RequestBuilder) ([]byte, error) {
+func (c *BaseClient) Query(ctx context.Context, rb RequestBuilder) ([]byte, bool, error) {
 	return c.do(ctx, Query, rb, nil)
 }
 
-func (c *BaseClient) Procedure(ctx context.Context, rb RequestBuilder, body BodyRequest) ([]byte, error) {
+func (c *BaseClient) Procedure(ctx context.Context, rb RequestBuilder, body BodyRequest) ([]byte, bool, error) {
 	return c.do(ctx, Procedure, rb, body)
 }
 
-func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, body BodyRequest) ([]byte, error) {
-	req, err := rb.Build(method, body)
+func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, body BodyRequest) ([]byte, bool, error) {
+	req, useCbor, err := rb.Build(method, body)
 	if err != nil {
-		return nil, err
+		return nil, useCbor, err
 	}
 
 	resp, err := c.client.Do(req.WithContext(ctx))
 	if err != nil {
-		return nil, err
+		return nil, useCbor, err
 	}
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
@@ -104,14 +106,14 @@ func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, b
 		err := ErrResponse{resp.StatusCode, b}
 		auth := rb.GetAuth()
 		if auth == nil {
-			return nil, err
+			return nil, useCbor, err
 		}
 		if auth.IsInvalidAuth(err) {
-			return nil, ErrInvalidAuth{err}
+			return nil, useCbor, ErrInvalidAuth{err}
 		}
-		return nil, err
+		return nil, useCbor, err
 	}
-	return b, err
+	return b, useCbor, err
 }
 
 func (c *BaseClient) NewRequest() RequestBuilder {

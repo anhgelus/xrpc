@@ -2,7 +2,6 @@ package xrpc
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 
 	"anhgelus.world/xrpc/atproto"
@@ -16,9 +15,9 @@ func (c *BaseClient) FetchURI(ctx context.Context, uri atproto.URI) (RecordStore
 	if uri.Collection() == nil || uri.RecordKey() == nil {
 		return v, ErrIncompleteURI
 	}
-	b, err := rawGetRecord(ctx, c, uri.Authority(), uri.Collection(), *uri.RecordKey(), nil)
+	b, useCbor, err := rawGetRecord(ctx, c, uri.Authority(), uri.Collection(), *uri.RecordKey(), nil)
 	if err != nil {
 		return v, err
 	}
-	return v, json.Unmarshal(b, &v)
+	return v, Unmarshal(b, useCbor, &v)
 }

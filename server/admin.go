@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"anhgelus.world/xrpc"
@@ -45,12 +44,12 @@ func CreateInviteCode(ctx context.Context, client xrpc.Client, useCount uint, fo
 		UseCount   uint         `json:"useCount"`
 		ForAccount *atproto.DID `json:"forAccount,omitempty"`
 	}{useCount, forAccount}
-	b, err := client.Procedure(ctx, req, xrpc.AsJsonBodyRequest(v))
+	b, useCbor, err := client.Procedure(ctx, req, xrpc.AsJsonBodyRequest(v))
 	if err != nil {
 		return "", err
 	}
 	var out struct {
 		Code string `json:"code"`
 	}
-	return out.Code, json.Unmarshal(b, &out)
+	return out.Code, xrpc.Unmarshal(b, useCbor, &out)
 }

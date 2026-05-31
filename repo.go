@@ -3,11 +3,13 @@ package xrpc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
 
 	"anhgelus.world/xrpc/atproto"
+	"anhgelus.world/xrpc/atproto/cbor"
 )
 
 // RecordStored represents a [Record] containg values about how it is stored.
@@ -24,6 +26,24 @@ var (
 	ErrInvalidSwap = ErrStandard("InvalidSwap")
 )
 
+// ErrCBORNotEmpty indicates that the CBOR returned contains more than needed.
+var ErrCBORNotEmpty = errors.New("invalid cbor: not empty after being parsed")
+
+// Unmarshal is helper wrapping [json.Unmarshal] and [cbor.Unmarshal].
+func Unmarshal(b []byte, useCbor bool, v any) error {
+	if !useCbor {
+		return json.Unmarshal(b, v)
+	}
+	rest, err := cbor.Unmarshal(b, v)
+	if err != nil {
+		return err
+	}
+	if len(rest) != 0 {
+		return ErrCBORNotEmpty
+	}
+	return nil
+}
+
 // GetRecord returns a single [Record] from a repository.
 //
 // If cid is omitted, it will return the latest version of the [Record].
@@ -35,11 +55,11 @@ func GetRecord[T Record](
 	cid *atproto.CID,
 ) (RecordStored[T], error) {
 	var v RecordStored[T]
-	b, err := rawGetRecord(ctx, client, did, v.Value.Collection(), rkey, cid)
+	b, useCbor, err := rawGetRecord(ctx, client, did, v.Value.Collection(), rkey, cid)
 	if err != nil {
 		return v, err
 	}
-	return v, json.Unmarshal(b, &v)
+	return v, Unmarshal(b, useCbor, &v)
 }
 
 func rawGetRecord(
@@ -49,7 +69,7 @@ func rawGetRecord(
 	col *atproto.NSID,
 	rkey atproto.RecordKey,
 	cid *atproto.CID,
-) ([]byte, error) {
+) ([]byte, bool, error) {
 	params := make(url.Values)
 	params.Add("repo", did.String())
 	params.Add("collection", col.String())
@@ -60,7 +80,7 @@ func rawGetRecord(
 	req, err := client.NewRequest().
 		PDS(ctx, client.Directory(), did)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	req = req.Endpoint(collection.Name("getRecord").Build()).
 		Params(params)
@@ -103,12 +123,12 @@ func ListRecords[T Record](
 	}
 	req = req.Endpoint(collection.Name("listRecords").Build()).
 		Params(params)
-	b, err := client.Query(ctx, req)
+	b, useCbor, err := client.Query(ctx, req)
 	if err != nil {
 		return nil, "", err
 	}
 	var out listOut[T]
-	err = json.Unmarshal(b, &out)
+	err = Unmarshal(b, useCbor, &out)
 	return out.Records, out.Cursor, err
 }
 
@@ -133,12 +153,12 @@ func DescribeRepo(ctx context.Context, client Client, did *atproto.DID) (*RepoDe
 	}
 	req = req.Endpoint(collection.Name("describeRepo").Build()).
 		Params(params)
-	b, err := client.Query(ctx, req)
+	b, useCbor, err := client.Query(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	var v RepoDescription
-	return &v, json.Unmarshal(b, &v)
+	return &v, Unmarshal(b, useCbor, &v)
 }
 
 type sendRecordRequest struct {
@@ -230,12 +250,12 @@ func sendRecord(
 	req RequestBuilder,
 	body sendRecordRequest,
 ) (*SendRecordResult, error) {
-	b, err := client.Procedure(ctx, req, AsJsonBodyRequest(body))
+	b, useCbor, err := client.Procedure(ctx, req, AsJsonBodyRequest(body))
 	if err != nil {
 		return nil, err
 	}
 	var v SendRecordResult
-	return &v, json.Unmarshal(b, &v)
+	return &v, Unmarshal(b, useCbor, &v)
 }
 
 // DeleteRecord for the authentificated [Client].
@@ -254,7 +274,7 @@ func DeleteRecord[T Record](
 ) (*CommitMeta, error) {
 	req := client.NewRequest().Endpoint(collection.Name("deleteRecord").Build())
 	var rec T
-	b, err := client.Procedure(ctx, req, AsJsonBodyRequest(sendRecordRequest{
+	b, useCbor, err := client.Procedure(ctx, req, AsJsonBodyRequest(sendRecordRequest{
 		Repo:       req.GetAuth().DID(),
 		Collection: rec.Collection(),
 		RKey:       rkey,
@@ -267,5 +287,5 @@ func DeleteRecord[T Record](
 	var v struct {
 		Commit CommitMeta `json:"commit"`
 	}
-	return &v.Commit, json.Unmarshal(b, &v)
+	return &v.Commit, Unmarshal(b, useCbor, &v)
 }

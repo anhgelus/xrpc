@@ -6,4 +6,4 @@ require pgregory.net/rapid v1.2.0
 
 require github.com/coder/websocket v1.8.14
 
-require github.com/klauspost/compress v1.18.6 // indirect
+require github.com/klauspost/compress v1.18.6

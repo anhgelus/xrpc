@@ -72,10 +72,10 @@ func (rb RequestBuilder) GetAuth() Auth {
 	return rb.auth
 }
 
-// Build returns a valid string representation of the request's endpoint.
+// Build returns a valid string representation of the request's endpoint and true if it must use CBOR.
 //
 // Panics if server or endpoint is not set.
-func (rb RequestBuilder) Build(method string, body BodyRequest) (*http.Request, error) {
+func (rb RequestBuilder) Build(method string, body BodyRequest) (*http.Request, bool, error) {
 	if rb.server == "" {
 		panic("cannot finish: server (PDS or relay) is not set")
 	}
@@ -86,14 +86,14 @@ func (rb RequestBuilder) Build(method string, body BodyRequest) (*http.Request, 
 	if body != nil {
 		b, err := body.Body()
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		content = bytes.NewReader(b)
 	}
 
 	req, err := http.NewRequest(method, rb.String(), content)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", rb.userAgent)
@@ -103,7 +103,7 @@ func (rb RequestBuilder) Build(method string, body BodyRequest) (*http.Request, 
 	if rb.auth != nil {
 		rb.auth.AuthRequest(req)
 	}
-	return req, nil
+	return req, rb.useRelay, nil
 }
 
 func (rb RequestBuilder) String() string {
