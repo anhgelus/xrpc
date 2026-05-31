@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.6.0
+
+Breaking change:
+- low-level XRPC API indicates if the bytes are encoded with CBOR instead of JSON
+
+New features:
+- `Is` method for `atproto.DID`
+- `jetstream.ErrInvalidEvent` to use when the `jetstream.Event` is invalid
+- compress by default a `jetstream.Feed`
+
+Fixes:
+- client connected to a relay now works (was expecting JSON instead of CBOR)
+
 ## v0.5.0
 
 New features:

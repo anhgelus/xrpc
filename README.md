@@ -51,13 +51,13 @@ req := client.NewRequest().
     Params(nil). // optional url.Values
     Build() // can panic if something is wrong
 // XRPC query
-b, err := client.Query(context.TODO(), req)
+b, useCbor, err := client.Query(context.TODO(), req)
 if err != nil {
     panic(err)
 }
 // XRPC procedure
 body := xrpc.RawBodyRequest{[]byte("Hello world :D"), "text/plain"} // procedure body
-b, err := client.Procedure(context.TODO(), req, body)
+b, useCbor, err := client.Procedure(context.TODO(), req, body)
 if err != nil {
     panic(err)
 }
@@ -110,6 +110,9 @@ if err != nil {
 
 > [!WARNING] 
 > You should always call `xrpc.Marshal` when marshaling a `Record` into JSON!
+
+> [!INFO]
+> You can easily unmarshal a response with `xrpc.Unmarshal`: it's a simple helper handling both JSON and CBOR encodings.
 
 ### Complexe records
 
@@ -186,8 +189,8 @@ If you want real examples, you can look at:
   - [x] Client definition
   - [x] JWT Auth
   - [ ] OAuth
-- [ ] [Stream](https://atproto.com/specs/event-stream)
+- [x] [Stream](https://atproto.com/specs/event-stream)
   - [x] CBOR encoding/decoding (experimental, but fuzz tested)
   - [x] Jetsream support
-  - [ ] Relay connection
+  - [x] Relay connection (experimental)
 - [ ] [Service proxying](https://atproto.com/specs/xrpc#service-proxying)
