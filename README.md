@@ -56,7 +56,7 @@ if err != nil {
     panic(err)
 }
 // XRPC procedure
-body := xrpc.RawBodyRequest{[]byte("Hello world :D"), "text/plain"} // procedure body
+body := xrpc.BodyRequest{[]byte("Hello world :D"), "text/plain"} // procedure body
 b, useCbor, err := client.Procedure(context.TODO(), req, body)
 if err != nil {
     panic(err)
@@ -85,22 +85,16 @@ Then, you can use the higher level API:
 var did *atproto.DID // did of a user
 var rkey atproto.RecordKey // rkey of the record
 rec, err := xrpc.GetRecord[*MyRecord](
-    context.TODO(), 
-    client, 
-    "https://...", // URL of the XRPC server (PDS, relay...)
-    did,
-    rkey,
-    nil,
+    context.TODO(), client, "https://...", did, rkey, nil,
+	// URL of the XRPC server (PDS, relay...)
 )
 if err != nil {
     panic(err)
 }
 // list records
 recs, err := xrpc.ListRecords[*MyRecord](
-    context.TODO(), 
-    client, 
-    "https://...", // URL of the XRPC server (PDS, relay...)
-    did,
+    context.TODO(), client, "https://...", did,
+	// URL of the XRPC server (PDS, relay...)
     0, "", false, // not required values
 )
 if err != nil {

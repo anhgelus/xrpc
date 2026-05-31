@@ -10,6 +10,7 @@ New features:
 - `Is` method for `atproto.DID`
 - `jetstream.ErrInvalidEvent` to use when the `jetstream.Event` is invalid
 - compress by default a `jetstream.Feed`
+- `Nullable[T]` represents a type that can be null or absent
 
 Fixes:
 - client connected to a relay now works (was expecting JSON instead of CBOR)
