@@ -2,6 +2,7 @@ package jetsream
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"log/slog"
 	"net/url"
@@ -12,7 +13,11 @@ import (
 	"anhgelus.world/xrpc/atproto"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/klauspost/compress/zstd"
 )
+
+//go:embed zstd_dictionary
+var ZSTDDictionary []byte
 
 // Options used in the [Feed].
 type Options struct {
@@ -20,6 +25,7 @@ type Options struct {
 	DIDs                []*atproto.DID
 	MaxMessageSizeBytes uint
 	Cursor              uint64
+	DoNotCompress       bool
 }
 
 // Feed connected to a Jetstream.
@@ -58,6 +64,9 @@ func New(log *slog.Logger, u *url.URL, opt *Options) (*Feed, error) {
 	}
 	if opt.MaxMessageSizeBytes > 0 {
 		q.Add("maxMessageSizeBytes", strconv.Itoa(int(opt.MaxMessageSizeBytes)))
+	}
+	if !opt.DoNotCompress {
+		q.Add("compress", "true")
 	}
 	u.RawQuery = q.Encode()
 	f := &Feed{log: log, url: u, Cursor: opt.Cursor}
@@ -139,6 +148,10 @@ func (f *Feed) Listen() <-chan Event {
 }
 
 func (f *Feed) read(ctx context.Context) {
+	dec, err := zstd.NewReader(nil, zstd.WithDecoderDicts(ZSTDDictionary))
+	if err != nil {
+		panic(err)
+	}
 	for {
 		_, b, err := f.conn.Read(ctx)
 		select {
@@ -170,10 +183,15 @@ func (f *Feed) read(ctx context.Context) {
 			}
 			return
 		}
-		var e Event
-		err = json.Unmarshal(b, &e)
+		data, err := dec.DecodeAll(b, nil)
 		if err != nil {
-			f.log.Error("cannot unmarshal event", "error", err, "raw", b)
+			f.log.Error("cannot decode message, skipping", "error", err, "data", b)
+			continue
+		}
+		var e Event
+		err = json.Unmarshal(data, &e)
+		if err != nil {
+			f.log.Error("cannot unmarshal event", "error", err, "raw", data)
 			continue
 		}
 		f.Cursor = e.TimeUs
