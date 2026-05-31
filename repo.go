@@ -162,13 +162,13 @@ func DescribeRepo(ctx context.Context, client Client, did *atproto.DID) (*RepoDe
 }
 
 type sendRecordRequest struct {
-	Rec        Record               `json:"record,omitempty"`
-	Repo       *atproto.DID         `json:"repo"`
-	Collection *atproto.NSID        `json:"collection"`
-	RKey       atproto.RecordKey    `json:"rkey,omitempty"`
-	Validate   *bool                `json:"validate,omitempty"`
-	SwapCommit *atproto.CIDAsString `json:"swapCommit,omitempty"`
-	SwapRecord *atproto.CIDAsString `json:"swapRecord,omitempty"`
+	Rec        Record                         `json:"record,omitempty"`
+	Repo       *atproto.DID                   `json:"repo"`
+	Collection *atproto.NSID                  `json:"collection"`
+	RKey       atproto.RecordKey              `json:"rkey,omitempty"`
+	Validate   *bool                          `json:"validate,omitempty"`
+	SwapCommit *atproto.CIDAsString           `json:"swapCommit,omitempty"`
+	SwapRecord *Nullable[atproto.CIDAsString] `json:"swapRecord,omitempty"`
 }
 
 type RecordValidationStatus string
@@ -221,8 +221,7 @@ func CreateRecord(
 // Validate indicates whether the server should validate the [Record] against the Lexicon schema (if unset, validate
 // only for known lexicons).
 // SwapCommit is used to compare and swap with the previous commit (not required, disabled by default).
-// SwapRecord is used to compare and swap with the previous record (not required, disabled by default ; cannot
-// represent nullable easily in Go...).
+// SwapRecord is used to compare and swap with the previous record (not required, disabled by default).
 func PutRecord(
 	ctx context.Context,
 	client Client,
@@ -230,7 +229,7 @@ func PutRecord(
 	rkey atproto.RecordKey,
 	validate *bool,
 	swapCommit *atproto.CID,
-	swapRecord *atproto.CID,
+	swapRecord *Nullable[atproto.CID],
 ) (*SendRecordResult, error) {
 	req := client.NewRequest().Endpoint(collection.Name("putRecord").Build())
 	return sendRecord(ctx, client, req, sendRecordRequest{
@@ -240,7 +239,9 @@ func PutRecord(
 		RKey:       rkey,
 		Validate:   validate,
 		SwapCommit: (*atproto.CIDAsString)(swapCommit),
-		SwapRecord: (*atproto.CIDAsString)(swapRecord),
+		SwapRecord: MapNullable(swapRecord, func(a *atproto.CID) *atproto.CIDAsString {
+			return (*atproto.CIDAsString)(a)
+		}),
 	})
 }
 
@@ -263,14 +264,13 @@ func sendRecord(
 //
 // Rkey used to locate the [Record] (must be set!).
 // SwapCommit is used to compare and swap with the previous commit (not required, disabled by default).
-// SwapRecord is used to compare and swap with the previous record (not required, disabled by default ; cannot
-// represent nullable easily in Go...).
+// SwapRecord is used to compare and swap with the previous record (not required, disabled by default).
 func DeleteRecord[T Record](
 	ctx context.Context,
 	client Client,
 	rkey atproto.RecordKey,
 	swapCommit *atproto.CID,
-	swapRecord *atproto.CID,
+	swapRecord *Nullable[atproto.CID],
 ) (*CommitMeta, error) {
 	req := client.NewRequest().Endpoint(collection.Name("deleteRecord").Build())
 	var rec T
@@ -279,7 +279,9 @@ func DeleteRecord[T Record](
 		Collection: rec.Collection(),
 		RKey:       rkey,
 		SwapCommit: (*atproto.CIDAsString)(swapCommit),
-		SwapRecord: (*atproto.CIDAsString)(swapRecord),
+		SwapRecord: MapNullable(swapRecord, func(a *atproto.CID) *atproto.CIDAsString {
+			return (*atproto.CIDAsString)(a)
+		}),
 	}))
 	if err != nil {
 		return nil, err

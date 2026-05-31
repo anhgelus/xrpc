@@ -46,6 +46,9 @@
 //
 // If you want to marshal your [Record] into a JSON, you must use [Marshal].
 //
+// Sometimes, you must represent an absence of response and a null element.
+// [Nullable] is a wrapper that can be used to represent these values.
+//
 // # Auth
 //
 // Some endpoint requires [Auth].

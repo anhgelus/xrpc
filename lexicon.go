@@ -104,8 +104,8 @@ var (
 //
 // It doesn't implement [Record] because it is an object and not a record.
 type StrongRef struct {
-	URI atproto.RawURI `json:"uri"`
-	CID string         `json:"cid"`
+	URI atproto.RawURI       `json:"uri"`
+	CID *atproto.CIDAsString `json:"cid"`
 }
 
 // GetRef returns an [Union] containing the [Record] pointed by the [StrongRef].
