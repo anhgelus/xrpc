@@ -19,7 +19,7 @@ func IsErrCannotParse(err error) bool {
 
 // ErrDIDNotFound indicates that the [DID] was not found.
 //
-// Use [errors.As] on [ErrDIDPlcResolve] or on [ErrDIDWebResolve] to get it.
+// Use [errors.AsType] on [ErrDIDPlcResolve] or on [ErrDIDWebResolve] to get it.
 type ErrDIDNotFound struct {
 	inner error
 }
@@ -33,8 +33,7 @@ func (err ErrDIDNotFound) Unwrap() error {
 }
 
 func handleHTTPError(err error, notFoundErr error) error {
-	var dns *net.DNSError
-	if errors.As(err, &dns) && dns.IsNotFound {
+	if _, ok := errors.AsType[*net.DNSError](err); ok {
 		return notFoundErr
 	}
 	return err

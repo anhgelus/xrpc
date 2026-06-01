@@ -82,11 +82,10 @@ func (a *JWTAuth) IsInvalidAuth(err ErrResponse) bool {
 	if err.StatusCode != http.StatusBadRequest {
 		return false
 	}
-	var r ErrStandardResponse
-	if !errors.As(err, &r) {
-		return false
+	if r, ok := errors.AsType[ErrStandardResponse](err); ok {
+		return errors.Is(r, InvalidJWTAuth)
 	}
-	return errors.Is(r, InvalidJWTAuth)
+	return false
 }
 
 // AuthClient is a [Client] used if an endpoint requires authentification.

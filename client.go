@@ -136,7 +136,7 @@ func (e ErrStandard) Error() string {
 //	var err ErrStandardResponse
 //	errors.Is(err, xrpc.ErrRecordNotFound)
 //
-// You can get the [ErrStandard] with [errors.Unwrap] or with [errors.As].
+// You can get the [ErrStandard] with [errors.Unwrap] or with [errors.AsType].
 //
 // Obtained from [ErrResponse].
 type ErrStandardResponse struct {
@@ -178,7 +178,7 @@ func (r ErrStandardResponse) As(target any) bool {
 
 // ErrResponse is returned by a [Client] when an [http.Response] contains a status code >= 400.
 //
-// Use [errors.As] can be used to convert an [ErrResponse] into an [ErrStandardResponse].
+// [errors.AsType] can be used to convert an [ErrResponse] into an [ErrStandardResponse].
 type ErrResponse struct {
 	// StatusCode of the response.
 	StatusCode int
@@ -219,8 +219,7 @@ func (r ErrResponse) Is(err error) bool {
 
 func (r ErrResponse) Error() string {
 	if r.Content != nil {
-		var std ErrStandardResponse
-		if errors.As(r, &std) {
+		if std, ok := errors.AsType[ErrStandardResponse](r); ok {
 			return std.Error()
 		}
 		return fmt.Sprintf("%s (status code: %d)", r.Content, r.StatusCode)

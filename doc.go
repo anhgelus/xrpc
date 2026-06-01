@@ -6,7 +6,7 @@
 // # Errors
 //
 // [ErrResponse] is a generic error returned by the [Client]: it contains the response's status code and body.
-// It can be converted into an [ErrStandardResponse] with [errors.As] if the API returns a standard error response:
+// It can be converted into an [ErrStandardResponse] with [errors.AsType] if the API returns a standard error response:
 //
 //	var err xrpc.ErrResponse
 //	if e, ok := errors.AsType[xrpc.ErrStandardResponse](err); ok {
@@ -14,8 +14,9 @@
 //	}
 //
 // An [ErrStandardResponse] wraps an [ErrStandard] (defined by the lexicon) and a specific message.
-// The [ErrStandard] contained can be checked with [errors.Is], got with [errors.As] and unwrapped with [errors.Unwrap].
-// You can directly check the [ErrStandard] on [ErrResponse] with [errors.Is] and [errors.As].
+// The [ErrStandard] contained can be checked with [errors.Is], got with [errors.AsType] and unwrapped with
+// [errors.Unwrap].
+// You can directly check the [ErrStandard] on [ErrResponse] with [errors.Is] and [errors.AsType].
 //
 // The [ErrStandardResponse] already wraps the [ErrStandard]: you can use [errors.Unwrap] to get it.
 //
