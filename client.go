@@ -1,6 +1,7 @@
 package xrpc
 
 import (
+	"container/list"
 	"context"
 	"encoding/json"
 	"errors"
@@ -30,7 +31,7 @@ type Client interface {
 	// Query performs an XRPC [Query].
 	// Returns the content of the response and true if it is encoded with CBOR.
 	//
-	// Returns [ErrResponse] if the response code indicates an error >= 400.
+	//Returns [ErrResponse] if the response code indicates an error >= 400.
 	Query(context.Context, RequestBuilder) ([]byte, bool, error)
 	// Procedure performs an XRPC [Procedure].
 	// Returns the content of the response and true if it is encoded with CBOR.
@@ -47,6 +48,8 @@ type Client interface {
 	HTTP() *http.Client
 	// Directory returns the [atproto.Directory] used by the [Client].
 	Directory() atproto.Directory
+	// Use a [RoundTripperMiddleware].
+	Use(...RoundTripperMiddleware)
 }
 
 // ErrInvalidAuth is returned when the [Auth] used is invalid.
@@ -62,16 +65,22 @@ func (err ErrInvalidAuth) Unwrap() error {
 	return err.inner
 }
 
-// BaseClient is a simple ATProto XRPC client.
+// RoundTripperMiddleware is a middleware for [http.RoundTripper].
+type RoundTripperMiddleware interface {
+	RoundTrip(http.RoundTripper) http.RoundTripper
+}
+
+// BaseClient is a simple ATProto XRPC [Client].
 type BaseClient struct {
 	UserAgent string
 	client    *http.Client
 	dir       atproto.Directory
+	rounds    *list.List
 }
 
 // NewClient creates a new [BaseClient].
 func NewClient(client *http.Client, dir atproto.Directory, userAgent string) *BaseClient {
-	return &BaseClient{userAgent, client, dir}
+	return &BaseClient{userAgent, client, dir, list.New()}
 }
 
 func (c *BaseClient) HTTP() *http.Client {
@@ -96,6 +105,12 @@ func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, b
 		return nil, useCbor, err
 	}
 
+	client := c.client
+	client.Transport = http.DefaultTransport
+	for e := c.rounds.Back(); e != nil; e = e.Prev() {
+		client.Transport = e.Value.(RoundTripperMiddleware).RoundTrip(client.Transport)
+	}
+
 	resp, err := c.client.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, useCbor, err
@@ -118,6 +133,12 @@ func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, b
 
 func (c *BaseClient) NewRequest() RequestBuilder {
 	return RequestBuilder{}
+}
+
+func (c *BaseClient) Use(middlewares ...RoundTripperMiddleware) {
+	for _, m := range middlewares {
+		c.rounds.PushFront(m)
+	}
 }
 
 // ErrStandard is an error defined in the lexicon.
