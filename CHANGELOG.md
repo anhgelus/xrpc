@@ -12,9 +12,11 @@ New features:
 - `jetstream.ErrInvalidEvent` to use when the `jetstream.Event` is invalid
 - compress by default a `jetstream.Feed`
 - `Nullable[T]` represents a type that can be null or absent
+- support roundtripper middlewares for clients
+- `Unmarshal` is a helper wrapping `json.Unmarshal` and `cbor.Unmarshal`
 
 Fixes:
-- client connected to a relay now works (was expecting JSON instead of CBOR)
+- client connected to a relay was expecting JSON instead of CBOR
 
 ## v0.5.0
 

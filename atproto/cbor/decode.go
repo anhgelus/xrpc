@@ -38,6 +38,11 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 		return nil, fmt.Errorf("%w: given %T", ErrUnmarshalRequiresPointer, v)
 	}
 	for ptr.Elem().Kind() == reflect.Pointer {
+		if ptr.Elem().IsNil() {
+			t := ptr.Elem().Type()
+			ref := reflect.New(t.Elem())
+			ptr.Elem().Set(ref)
+		}
 		ptr = ptr.Elem()
 	}
 	defer func() {
@@ -73,7 +78,7 @@ func Unmarshal(b []byte, v any) (rest []byte, err error) {
 	case byteString:
 		err = unmarshalBytes(ptr, a, r)
 	case textString:
-		sub := reflect.New(reflect.TypeFor[string]())
+		sub := reflect.New(ptr.Elem().Type())
 		err = unmarshalBytes(sub, a, r)
 		ptr.Elem().Set(sub.Elem())
 	case array:
@@ -155,16 +160,19 @@ func unmarshalArray(ptr reflect.Value, a additionalInformation, r *ByteReader) e
 	}
 	t := ptr.Elem().Type()
 	var inner reflect.Value
-	if t == anySpecialCase {
-		inner = reflect.MakeSlice(reflect.SliceOf(t), 0, int(ln))
-	} else {
-		inner = reflect.MakeSlice(t, 0, int(ln))
+	switch t.Kind() {
+	case reflect.Interface:
+		inner = reflect.MakeSlice(reflect.SliceOf(t), int(ln), int(ln))
+	case reflect.Array:
+		inner = reflect.New(t).Elem()
+	default:
+		inner = reflect.MakeSlice(t, int(ln), int(ln))
 	}
 	if ln == 0 {
 		ptr.Elem().Set(inner)
 		return nil
 	}
-	for range ln {
+	for i := range ln {
 		var val reflect.Value
 		if t == anySpecialCase {
 			val = reflect.New(anySpecialCase)
@@ -176,7 +184,7 @@ func unmarshalArray(ptr reflect.Value, a additionalInformation, r *ByteReader) e
 			return err
 		}
 		r.Reset(rest)
-		inner = reflect.Append(inner, val.Elem())
+		inner.Index(int(i)).Set(val.Elem())
 	}
 	ptr.Elem().Set(inner)
 	return nil
