@@ -17,7 +17,7 @@ steps:
       go vet -v ./...
   - name: Run tests
     command: |
-      go test -rapid.checks=10_000 -v -race -cover ./...
+      go test ./... -rapid.checks=10_000 -v -race -cover 
       res=$?
       if [ $res -ne 0 ]; then cat "**/testdata/**.fail"; exit $res; fi
   - name: Run fuzz
