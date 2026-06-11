@@ -3,6 +3,7 @@ package jetsream
 import (
 	"context"
 	"log/slog"
+	"math/rand"
 	"net/url"
 	"testing"
 	"time"
@@ -10,10 +11,15 @@ import (
 	_ "pgregory.net/rapid"
 )
 
-const jetstream = "wss://jetstream2.us-east.bsky.network/subscribe"
+var jetstream = [4]string{
+	"wss://jetstream2.us-east.bsky.network/subscribe",
+	"wss://jetstream1.us-east.bsky.network/subscribe",
+	"wss://jetstream2.fr.hose.cam/subscribe",
+	"wss://jetstream.fire.hose.cam/subscribe"}
 
 func genBase(ctx context.Context, log *slog.Logger) (*Feed, error) {
-	u, err := url.Parse(jetstream)
+	v := jetstream[rand.Intn(len(jetstream))]
+	u, err := url.Parse(v)
 	if err != nil {
 		return nil, err
 	}
@@ -64,26 +70,18 @@ func TestFeed_Reconnect(t *testing.T) {
 	if testing.Short() {
 		t.Skip("not doing requests in short mode")
 	}
-	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
-	defer cancel()
-	log := slog.Default()
-	f, err := genBase(ctx, log)
+	f, err := genBase(t.Context(), slog.Default())
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer cancel()
 	i := 0
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-f.Listen():
-			i++
-			if i%1030 == 0 {
-				err = f.Reconnect(ctx)
-				if err != nil {
-					t.Fatal(err)
-				}
+	for i/1000 < 5 {
+		<-f.Listen()
+		i++
+		if i%(1000+rand.Intn(100)) == 0 {
+			err = f.Reconnect(t.Context())
+			if err != nil {
+				t.Fatal(err)
 			}
 		}
 	}
