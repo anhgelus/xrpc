@@ -11,6 +11,9 @@ dependencies:
     - ripgrep
     - jq
 
+environment:
+  GOTOOLCHAIN: "go1.26.4"
+
 steps:
   - name: Lint code
     command: |
@@ -18,14 +21,10 @@ steps:
   - name: Run tests
     command: |
       go test ./... -rapid.checks=10_000 -v -race -cover 
-      res=$?
-      if [ $res -ne 0 ]; then cat "**/testdata/**.fail"; exit $res; fi
   - name: Run fuzz
     command: |
       values=$(rg "Fuzz\w+" --json | jq -r 'if .type | . != "match" then empty end | .data | (.path.text | split("/")[:-1] | join("/")) + "/" + .submatches[0].match.text')
       for v in $values; do
         file=$(basename $v)
         go test ./$(dirname $v) -v -fuzztime=1m -fuzz $file -run $file
-        res=$?
-        if [ $res -ne 0 ]; then cat "**/testdata/**.fail"; exit $res; fi
       done
