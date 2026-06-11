@@ -150,23 +150,33 @@ type Directory interface {
 	ResolveDID(context.Context, *DID) (*DIDDocument, error)
 }
 
-// BaseDirectory is a simple [Directory].
+// BaseDirectory is a simple [Directory] using a [DIDPlcDirectory] to retrieve [DIDDocument].
 type BaseDirectory struct {
 	client   *http.Client
 	resolver *net.Resolver
+	// PlcDirectory used to retrieve the [DIDDocument] associated with a [DIDPlc].
+	PlcDirectory DIDPlcDirectory
 }
 
 // NewDirectory returns a new [BaseDirectory] with the given [http.Client] (for well-known verification) and
 // [net.resolver] (for DNS verification).
+//
+// It uses the [BlueskyPlcDirectory] by default, but you can modify the [DIDPlcDirectory] by modifying
+// [BaseDirectory.PlcDirectory].
+//
+//	// using Eurosky's directory
+//	dir := NewDirectory(client, resolver)
+//	dir.PlcDirectory = EuroskyPlcDirectory
 func NewDirectory(client *http.Client, resolver *net.Resolver) *BaseDirectory {
 	return &BaseDirectory{
-		client:   client,
-		resolver: resolver,
+		client:       client,
+		resolver:     resolver,
+		PlcDirectory: BlueskyPlcDirectory,
 	}
 }
 
 func (d *BaseDirectory) ResolveDID(ctx context.Context, did *DID) (*DIDDocument, error) {
-	return did.document(ctx, d.client)
+	return did.document(ctx, d.client, d.PlcDirectory)
 }
 
 func (d *BaseDirectory) ResolveHandle(ctx context.Context, h Handle) (*DIDDocument, error) {

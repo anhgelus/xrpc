@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"testing"
 	"time"
+
+	_ "pgregory.net/rapid"
 )
 
 const jetstream = "wss://jetstream2.us-east.bsky.network/subscribe"

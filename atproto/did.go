@@ -38,7 +38,17 @@ func asDIDMethod(raw string) (DIDMethod, bool) {
 
 const (
 	DIDIdentifierMaxLength = 2048
-	DIDPlcDirectory        = "https://plc.directory"
+)
+
+// DIDPlcDirectory stores the [DIDDocument] associated with a [DIDPlc].
+type DIDPlcDirectory string
+
+// Public [DIDPlcDirectory].
+const (
+	// BlueskyPlcDirectory is the official [DIDPlcDirectory] owned by Bluesky Social PBC.
+	BlueskyPlcDirectory DIDPlcDirectory = "https://plc.directory"
+	// EuroskyPlcDirectory is a [DIDPlcDirectory] read-replica of [BlueskyPlcDirectory] maintained by Eurosky.
+	EuroskyPlcDirectory DIDPlcDirectory = "https://plc.eurosky.network"
 )
 
 // Errors returned while parsing a [DID].
@@ -69,7 +79,7 @@ func (d *DID) Is(other *DID) bool {
 	return d.Method == other.Method && d.Identifier == other.Identifier
 }
 
-func (d *DID) document(ctx context.Context, client *http.Client) (*DIDDocument, error) {
+func (d *DID) document(ctx context.Context, client *http.Client, directory DIDPlcDirectory) (*DIDDocument, error) {
 	switch d.Method {
 	case DIDWeb:
 		// https://w3c-ccg.github.io/did-method-web/
@@ -98,7 +108,10 @@ func (d *DID) document(ctx context.Context, client *http.Client) (*DIDDocument, 
 		err = json.Unmarshal(b, &d)
 		return &d, err
 	case DIDPlc:
-		req, err := http.NewRequest(http.MethodGet, DIDPlcDirectory+"/"+d.String(), nil)
+		req, err := http.NewRequest(
+			http.MethodGet,
+			string(directory)+"/"+d.String(),
+			nil)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +133,9 @@ func (d *DID) document(ctx context.Context, client *http.Client) (*DIDDocument, 
 			e.StatusCode = resp.StatusCode
 			return nil, e
 		} else if resp.StatusCode >= 400 {
-			return nil, fmt.Errorf("unknown PLC error status code: %s (status code: %d)", b, resp.StatusCode)
+			return nil, fmt.Errorf(
+				"unknown PLC error status code: %s (status code: %d)",
+				b, resp.StatusCode)
 		}
 		var d DIDDocument
 		err = json.Unmarshal(b, &d)
