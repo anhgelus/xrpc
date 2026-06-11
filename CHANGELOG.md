@@ -14,9 +14,11 @@ New features:
 - `Nullable[T]` represents a type that can be null or absent
 - support roundtripper middlewares for clients
 - `Unmarshal` is a helper wrapping `json.Unmarshal` and `cbor.Unmarshal`
+- support custom DID PLC directories
 
 Fixes:
 - client connected to a relay was expecting JSON instead of CBOR
+- trying to decompress event when using an uncompressed jetstream
 
 ## v0.5.0
 
