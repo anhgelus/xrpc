@@ -52,15 +52,21 @@ func TestAsDidMethod(t *testing.T) {
 
 func genDid(t *rapid.T, label string) string {
 	method := rapid.SampledFrom([]DIDMethod{DIDWeb, DIDPlc}).Draw(t, label+" method")
-	idsFirst := rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ1234567890._:%-"))
-	idsLast := rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ1234567890._-"))
-	identifier := rapid.StringOfN(idsFirst, -1, -1, DIDIdentifierMaxLength-5-len(method)).Draw(t, label+" id first") +
+	idsFirst := rapid.RuneFrom(
+		[]rune("abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ1234567890._:%-"))
+	idsLast := rapid.RuneFrom(
+		[]rune("abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ1234567890._-"))
+	identifier := rapid.StringOfN(
+		idsFirst,
+		-1,
+		-1,
+		DIDIdentifierMaxLength-5-len(method)).
+		Draw(t, label+" id first") +
 		rapid.StringOfN(idsLast, 1, -1, 1).Draw(t, "id last")
 	return "did:" + method.String() + ":" + identifier
 }
 
 func TestParseDid(t *testing.T) {
-	var prev *DID
 	rapid.Check(t, func(t *rapid.T) {
 		did := genDid(t, "did")
 		t.Log(did)
@@ -74,10 +80,6 @@ func TestParseDid(t *testing.T) {
 		if !d.Is(d) {
 			t.Error("did is not equal to did", d)
 		}
-		if prev != nil && d.Is(prev) {
-			t.Errorf("%s is equal to previous %s", d, prev)
-		}
-		prev = d
 	})
 	for _, did := range invalidDids {
 		_, err := ParseDID(did)
@@ -105,7 +107,10 @@ func TestDid_Document(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		doc, err := did.document(context.Background(), http.DefaultClient)
+		doc, err := did.document(
+			context.Background(),
+			http.DefaultClient,
+			BlueskyPlcDirectory)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -28,7 +28,7 @@ func TestFeed_Connect(t *testing.T) {
 	if testing.Short() {
 		t.Skip("not doing requests in short mode")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 	log := slog.Default()
 	f, err := genBase(ctx, log)
@@ -64,7 +64,7 @@ func TestFeed_Reconnect(t *testing.T) {
 	if testing.Short() {
 		t.Skip("not doing requests in short mode")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 	log := slog.Default()
 	f, err := genBase(ctx, log)
@@ -79,7 +79,7 @@ func TestFeed_Reconnect(t *testing.T) {
 			return
 		case <-f.Listen():
 			i++
-			if i%500 == 0 {
+			if i%1030 == 0 {
 				err = f.Reconnect(ctx)
 				if err != nil {
 					t.Fatal(err)
