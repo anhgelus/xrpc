@@ -43,6 +43,7 @@ type Feed struct {
 	ch        chan Event
 	wait      chan struct{}
 	connected atomic.Bool
+	compress  bool
 	// Last Cursor sent by the server.
 	Cursor uint64
 }
@@ -69,7 +70,7 @@ func New(log *slog.Logger, u *url.URL, opt *Options) (*Feed, error) {
 		q.Add("compress", "true")
 	}
 	u.RawQuery = q.Encode()
-	f := &Feed{log: log, url: u, Cursor: opt.Cursor}
+	f := &Feed{log: log, url: u, compress: !opt.DoNotCompress, Cursor: opt.Cursor}
 	return f, nil
 }
 
@@ -183,15 +184,18 @@ func (f *Feed) read(ctx context.Context) {
 			}
 			return
 		}
-		data, err := dec.DecodeAll(b, nil)
-		if err != nil {
-			f.log.Error("cannot decode message, skipping", "error", err, "data", b)
-			continue
+		if f.compress {
+			data, err := dec.DecodeAll(b, nil)
+			if err != nil {
+				f.log.Error("cannot decode message, skipping", "error", err, "data", b)
+				continue
+			}
+			b = data
 		}
 		var e Event
-		err = json.Unmarshal(data, &e)
+		err = json.Unmarshal(b, &e)
 		if err != nil {
-			f.log.Error("cannot unmarshal event", "error", err, "raw", data)
+			f.log.Error("cannot unmarshal event", "error", err, "raw", b)
 			continue
 		}
 		f.Cursor = e.TimeUs
