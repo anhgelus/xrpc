@@ -64,6 +64,10 @@ var (
 //
 // to the field.
 func MarshalToMap(v any) (any, error) {
+	ref := reflect.ValueOf(v)
+	if ref.Kind() == reflect.Pointer && ref.IsNil() {
+		return nil, nil
+	}
 	// if custom
 	if v != nil {
 		if conv, ok := v.(MapMarshaler); ok {
@@ -74,13 +78,9 @@ func MarshalToMap(v any) (any, error) {
 		}
 	}
 	// if not a struct
-	ref := reflect.ValueOf(v)
 	switch ref.Kind() {
 	case reflect.Struct:
 	case reflect.Pointer:
-		if ref.IsNil() {
-			return nil, nil
-		}
 		elem := ref.Elem()
 		if !elem.CanInterface() {
 			return nil, nil
