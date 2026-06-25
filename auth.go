@@ -59,7 +59,7 @@ func (a *JWTAuth) AuthRequest(req *http.Request) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	req.Header.Add("Authorization", "Bearer "+a.access)
+	req.Header.Set("Authorization", "Bearer "+a.access)
 }
 
 // Refresh the [JWTAuth] with provided tokens.

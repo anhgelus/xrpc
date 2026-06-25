@@ -90,7 +90,9 @@ func CreateSession(
 	if err != nil {
 		return nil, err
 	}
-	resp.Client = xrpc.NewAuthClient(client, xrpc.NewJWTAuth(resp.DID), server)
+	auth := xrpc.NewJWTAuth(resp.DID)
+	auth.Refresh(resp.AccessJWT, resp.RefreshJWT)
+	resp.Client = xrpc.NewAuthClient(client, auth, server)
 	return &resp.CreateSessionResult, nil
 }
 
