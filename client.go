@@ -107,7 +107,7 @@ func (c *BaseClient) do(ctx context.Context, method string, rb RequestBuilder, b
 
 	client := c.client
 	client.Transport = http.DefaultTransport
-	for e := c.rounds.Back(); e != nil; e = e.Prev() {
+	for e := c.rounds.Front(); e != nil; e = e.Next() {
 		client.Transport = e.Value.(RoundTripperMiddleware).RoundTrip(client.Transport)
 	}
 

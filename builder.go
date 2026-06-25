@@ -137,11 +137,11 @@ type BodyRequestConverter interface {
 //
 // See [AsEncodeBodyRequest] to create a new [EncodeBodyRequest].
 type EncodeBodyRequest struct {
-	any
+	Value any
 }
 
 func (e EncodeBodyRequest) AsBodyRequest(useCbor bool) (BodyRequest, error) {
-	b, err := Marshal(e, useCbor)
+	b, err := Marshal(e.Value, useCbor)
 	return BodyRequest{b, "application/json"}, err
 }
 
