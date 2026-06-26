@@ -147,7 +147,7 @@ func NewTIDGenerator(clockId uint) *TIDGenerator {
 // Next returns a new [TID].
 func (g *TIDGenerator) Next() TID {
 	now := time.Now()
-	nUnix := now.Unix()
+	nUnix := now.UnixMicro()
 
 	g.mu.Lock()
 	defer g.mu.Unlock()

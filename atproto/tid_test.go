@@ -1,7 +1,9 @@
 package atproto
 
 import (
+	"math"
 	"testing"
+	"time"
 
 	"pgregory.net/rapid"
 )
@@ -56,5 +58,21 @@ func TestNewTID(t *testing.T) {
 		if tid.ClockID() != clock {
 			t.Errorf("invalid clockId: %d, wanted %d", tid.ClockID(), clock)
 		}
+	})
+}
+
+func TestTIDGenerator(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		id := rapid.Uint8().Draw(t, "clock id")
+		gen := NewTIDGenerator(uint(id))
+		now := time.Now()
+		tid := gen.Next()
+		if tid.ClockID() != uint(id) {
+			t.Errorf("invalid clock id %v, wanted %v", tid.ClockID(), id)
+		}
+		if math.Abs(float64(tid.Time().UnixMicro()-now.UnixMicro())) > 100 {
+			t.Errorf("invalid time %v, wanted %v", tid.Time(), now)
+		}
+		time.Sleep(100 * time.Microsecond)
 	})
 }
