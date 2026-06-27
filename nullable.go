@@ -54,6 +54,9 @@ func (n *Nullable[T]) Set(v *T) {
 
 // MapNullable is the equivalent of a functional map applied to [Nullable].
 func MapNullable[A, B any](n *Nullable[A], fn func(*A) *B) *Nullable[B] {
+	if n == nil {
+		return nil
+	}
 	if !n.Present() {
 		return &Nullable[B]{}
 	}
