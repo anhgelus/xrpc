@@ -101,6 +101,10 @@ func (t TID) Time() time.Time {
 	return time.UnixMicro(int64(i)).UTC()
 }
 
+func (t TID) RecordKey() RecordKey {
+	return RecordKey(t)
+}
+
 // ClockID returns the clock ID used to create the [TID].
 func (t TID) ClockID() uint {
 	i := t.Uint64()
