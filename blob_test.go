@@ -1,6 +1,7 @@
 package xrpc
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"slices"
@@ -81,9 +82,12 @@ func TestBlob_JSON(t *testing.T) {
 		if bl.Size != blob.Size {
 			t.Errorf("invalid size: %d, wanted %d", bl.Size, blob.Size)
 		}
-		b, err = json.Marshal(bl)
+		b2, err := Marshal(bl, false)
 		if err != nil {
 			t.Fatal(err)
+		}
+		if !bytes.Equal(b, b2) {
+			t.Errorf("invalid marshal: %s, wanted %s", b2, b)
 		}
 	})
 }

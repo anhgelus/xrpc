@@ -20,6 +20,7 @@ func testNullable[T any](t *rapid.T, gen *rapid.Generator[T]) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("%#v -> %s\n", n, b)
 	var res *T
 	err = json.Unmarshal(b, &res)
 	if err != nil {

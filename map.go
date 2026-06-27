@@ -68,6 +68,7 @@ func MarshalToMap(v any) (any, error) {
 	if ref.Kind() == reflect.Pointer && ref.IsNil() {
 		return nil, nil
 	}
+	var mp map[string]any
 	// if custom
 	if v != nil {
 		if conv, ok := v.(MapMarshaler); ok {
@@ -75,6 +76,11 @@ func MarshalToMap(v any) (any, error) {
 		}
 		if conv, ok := v.(time.Time); ok {
 			return conv.Format(atproto.TimeFormat), nil
+		}
+		if conv, ok := v.(Record); ok {
+			defer func() {
+				mp["$type"] = conv.Collection()
+			}()
 		}
 	}
 	// if not a struct
@@ -85,14 +91,22 @@ func MarshalToMap(v any) (any, error) {
 		if !elem.CanInterface() {
 			return nil, nil
 		}
-		return MarshalToMap(elem.Interface())
+		res, err := MarshalToMap(elem.Interface())
+		if err != nil {
+			return nil, err
+		}
+		if conv, ok := res.(map[string]any); ok {
+			mp = conv
+			return mp, nil
+		}
+		return res, nil
 	default:
 		return v, nil
 	}
 	// handling struct
 	refType := ref.Type()
 	fields := ref.NumField()
-	mp := make(map[string]any, fields)
+	mp = make(map[string]any, fields)
 	for i := range fields {
 		field := ref.Field(i)
 		fieldType := refType.Field(i)

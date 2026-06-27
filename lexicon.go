@@ -84,9 +84,6 @@ func Marshal(a any, toCBOR bool) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if rec, ok := a.(Record); ok {
-		v.(map[string]any)["$type"] = rec.Collection()
-	}
 	if toCBOR {
 		return cbor.Marshal(v)
 	}
