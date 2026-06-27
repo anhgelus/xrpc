@@ -166,6 +166,18 @@ func (c *CID) String() string {
 // See [CID.String] for more information.
 type CIDAsString CID
 
+func ParseCIDString(s string) (*CIDAsString, error) {
+	enc, ok := cidEncodings[s[0]]
+	if !ok {
+		return nil, ErrUnsupportedCIDEncoding
+	}
+	cid, err := enc.Decode([]byte(s))
+	if err != nil {
+		return nil, err
+	}
+	return (*CIDAsString)(cid), nil
+}
+
 func (c *CIDAsString) CID() *CID {
 	return (*CID)(c)
 }
@@ -184,15 +196,11 @@ func (c *CIDAsString) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	enc, ok := cidEncodings[s[0]]
-	if !ok {
-		return ErrUnsupportedCIDEncoding
-	}
-	cid, err := enc.Decode([]byte(s))
+	cid, err := ParseCIDString(s)
 	if err != nil {
 		return err
 	}
-	*c = CIDAsString(*cid)
+	*c = *cid
 	return nil
 }
 
